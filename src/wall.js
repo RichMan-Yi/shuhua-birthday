@@ -3,6 +3,10 @@ import { createMap } from './map.js';
 import { SPOTS } from './spots.js';
 import { createCrowd } from './wall-data.js';
 import { makeFireworks } from './fireworks.js';
+
+// iOS Safari ignores user-scalable=no, so block its pinch and double-tap zoom gestures directly
+document.addEventListener('gesturestart', (e) => e.preventDefault());
+document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
 import { NIGHT } from './daylight.js';
 
 // Wish wall: the game's island, with handwritten notes popping out of it. Higher scores make

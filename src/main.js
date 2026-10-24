@@ -10,6 +10,10 @@ import { createNightGame } from './games/night.js';
 import { createEnding } from './ending.js';
 import { setMuted } from './audio.js';
 
+// iOS Safari ignores user-scalable=no, so block its pinch and double-tap zoom gestures directly
+document.addEventListener('gesturestart', (e) => e.preventDefault());
+document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
+
 // The flow (see GAME_FLOW.md): a level can be replayed until it is passed; the passing run's
 // score is locked in. With all five passed the player sends a birthday wish, and can then
 // reset the whole run to play again.
