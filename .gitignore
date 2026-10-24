@@ -1,0 +1,4 @@
+# reference art stays local (only the model viewer reads it)
+ref/
+.DS_Store
+test.html

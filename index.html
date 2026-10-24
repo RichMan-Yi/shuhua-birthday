@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>觀光大使的生日小旅行</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+  /* Layout: full-bleed 3D stage; paper cards float on top (title + stamps above, landmark sheet below). */
+  :root {
+    --sky: #CFE8EE;
+    --ink: #22343A;
+    --muted: #5C6F74;
+    --paper: #FFFBF3;
+    --line: #E8DDCB;
+    --peach: #E8685C;
+    --peach-deep: #C84B40;
+    --gold: #D99A1E;
+    --leaf: #4E9446;
+    --disabled: #DDD5C8;
+    --scrim: rgba(34, 52, 58, 0.32);
+    --font-display: "Huninn", "PingFang TC", "Noto Sans TC", sans-serif;
+    --font-body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    color-scheme: light;
+  }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--sky);
+    color: var(--ink);
+    font-family: var(--font-body);
+    overflow: hidden;
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  #stage { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+  .layer {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-block: calc(env(safe-area-inset-top, 0px) + 12px) calc(env(safe-area-inset-bottom, 0px) + 16px);
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    pointer-events: none;
+    box-sizing: border-box;
+  }
+  .card {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    box-shadow: 0 8px 24px rgba(34, 52, 58, 0.14);
+    pointer-events: auto;
+    box-sizing: border-box;
+  }
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--peach-deep);
+  }
+  .label { font-size: 11px; letter-spacing: 0.08em; color: var(--muted); }
+  h1, h2 { font-family: var(--font-display); font-weight: 400; margin: 0; text-wrap: balance; }
+
+  /* top card */
+  .top {
+    align-self: flex-start;
+    width: 100%;
+    max-width: 520px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 16px;
+    padding: 12px 14px;
+  }
+  .brand { display: grid; gap: 2px; }
+  .brand h1 { font-size: 22px; line-height: 1.2; }
+  .collect { display: flex; align-items: center; gap: 10px; }
+  .stamps { display: flex; gap: 5px; list-style: none; margin: 0; padding: 0; }
+  .stamp i {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px dashed var(--line);
+    display: grid;
+    place-items: center;
+    box-sizing: border-box;
+    font-style: normal;
+    font-family: var(--font-display);
+    font-size: 11px;
+    color: var(--muted);
+    opacity: 0.7;
+  }
+  .stamp.got i {
+    border: 2.5px solid var(--peach);
+    color: var(--peach-deep);
+    background: rgba(232, 104, 92, 0.08);
+    transform: rotate(-12deg);
+    opacity: 1;
+  }
+  .count { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  .hint {
+    margin: auto 0 0;
+    align-self: center;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 13px;
+    color: var(--muted);
+    text-align: center;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* landmark sheet */
+  .sheet {
+    margin-top: auto;
+    align-self: center;
+    width: 100%;
+    max-width: 460px;
+    padding: 18px 18px 16px;
+    position: relative;
+    display: grid;
+    gap: 6px;
+    animation: rise 0.28s ease-out;
+  }
+  .sheet h2 { font-size: 26px; line-height: 1.25; padding-right: 36px; }
+  .sheet p { margin: 0; font-size: 15px; line-height: 1.65; color: var(--muted); }
+  .sheet-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+  .game-chip { display: grid; gap: 1px; min-width: 0; }
+  .game-chip strong { font-family: var(--font-display); font-weight: 400; font-size: 17px; }
+  .sheet.got .game-chip strong::after { content: "  已蓋章"; font-family: var(--font-body); font-size: 12px; color: var(--peach-deep); }
+  .icon-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .btn {
+    font-family: var(--font-display);
+    font-size: 17px;
+    border: 0;
+    border-radius: 999px;
+    padding: 12px 24px;
+    background: var(--peach);
+    color: #FFFFFF;
+    box-shadow: 0 3px 0 var(--peach-deep);
+    cursor: pointer;
+    pointer-events: auto;
+    transition: transform 0.08s;
+  }
+  .btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--peach-deep); }
+  .btn:disabled { background: var(--disabled); color: var(--muted); box-shadow: none; cursor: default; }
+  .btn.ghost { background: var(--paper); color: var(--ink); border: 1px solid var(--line); box-shadow: 0 3px 0 var(--line); }
+  .btn.small { font-size: 15px; padding: 8px 14px; }
+  button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+  /* mini game HUD */
+  .hud { display: flex; gap: 8px; align-items: stretch; flex-wrap: wrap; }
+  .hud .card { display: flex; align-items: baseline; gap: 5px; padding: 6px 14px; position: relative; overflow: hidden; }
+  .hud strong { font-family: var(--font-display); font-weight: 400; font-size: 26px; font-variant-numeric: tabular-nums; min-width: 1.3em; text-align: right; }
+  .hud .of { font-size: 13px; color: var(--muted); }
+  .hud .hud-score { display: grid; grid-template-columns: auto auto; align-items: baseline; column-gap: 6px; padding-block: 4px 6px; }
+  .hud-score .goal { grid-column: 1 / -1; font-size: 11px; color: var(--muted); white-space: nowrap; }
+  .hud-score.done .goal { color: var(--leaf); font-weight: 700; }
+  .hud-score.done .goal::after { content: " ✓"; }
+  .bar { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: var(--line); }
+  .bar b { display: block; height: 100%; background: var(--peach); transform-origin: left; }
+
+  .countdown {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font-family: var(--font-display);
+    font-size: 96px;
+    color: #FFFFFF;
+    text-shadow: 0 4px 0 var(--peach-deep), 0 10px 30px rgba(34, 52, 58, 0.3);
+    pointer-events: none;
+  }
+  .countdown.tick { animation: tick 0.5s ease-out; }
+
+  .pops { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+  .pop {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    font-family: var(--font-display);
+    font-size: 26px;
+    color: var(--peach-deep);
+    text-shadow: 0 0 4px #FFFFFF, 0 0 2px #FFFFFF;
+    animation: float 0.8s ease-out forwards;
+  }
+  .pop.gold { color: var(--gold); font-size: 32px; }
+  .pop.bad { color: var(--ink); }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 380px);
+    place-content: center;
+    background: var(--scrim);
+    padding-block: 16px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    pointer-events: auto;
+    box-sizing: border-box;
+  }
+  .dialog {
+    width: 100%;
+    max-width: 380px;
+    padding: 22px 22px 20px;
+    display: grid;
+    gap: 12px;
+    text-align: center;
+    animation: rise 0.28s ease-out;
+  }
+  .dialog h2 { font-size: 28px; }
+  .dialog p { margin: 0; font-size: 15px; line-height: 1.65; color: var(--muted); }
+  .rules { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; text-align: left; font-size: 15px; line-height: 1.5; }
+  .rules li { display: grid; grid-template-columns: 34px 1fr; align-items: center; gap: 10px; }
+  .rules .dot { width: 26px; height: 26px; border-radius: 50%; justify-self: center; }
+  .actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .big { font-family: var(--font-display); font-size: 64px; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .big small { font-size: 20px; color: var(--muted); margin-left: 4px; }
+  .best { font-size: 13px; color: var(--muted); }
+  .seal {
+    justify-self: center;
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    border: 3px solid var(--peach);
+    color: var(--peach-deep);
+    display: grid;
+    place-items: center;
+    align-content: center;
+    font-family: var(--font-display);
+    transform: rotate(-12deg);
+    box-shadow: inset 0 0 0 4px var(--paper), inset 0 0 0 5.5px var(--peach);
+  }
+  .seal b { font-weight: 400; font-size: 22px; line-height: 1.1; }
+  .seal span { font-size: 10px; letter-spacing: 0.15em; }
+  .seal.fresh { animation: stamp 0.45s cubic-bezier(.2, 1.6, .4, 1) 0.15s both; }
+
+
+  /* game-specific overlays live inside the HUD layer's column */
+  .extra { display: contents; }
+  .hud .mute { margin-left: auto; }
+  .status-pill {
+    align-self: center;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 8px 18px;
+    font-family: var(--font-display);
+    font-size: 17px;
+    box-shadow: 0 6px 18px rgba(34, 52, 58, 0.12);
+  }
+  .status-pill:empty { display: none; }
+  .status-pill.lives { font-family: var(--font-body); font-size: 14px; color: var(--peach-deep); letter-spacing: 0.08em; }
+  .target-card {
+    align-self: center;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 8px 18px 8px 14px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+  }
+  .target-card .dot { width: 30px; height: 30px; border-radius: 50%; flex: none; }
+  .target-card strong { font-family: var(--font-display); font-weight: 400; font-size: 26px; }
+  .target-card.flip { animation: tick 0.35s ease-out; }
+
+  .night-ui { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
+  /* the order: a speech bubble that follows the customer's head (positioned by night.js) */
+  .order-bubble {
+    position: fixed;
+    left: 0;
+    top: 0;
+    transform: translate(-50%, -100%);
+    display: grid;
+    gap: 6px;
+    padding: 10px 14px 14px;
+    background: #FFFFFF;
+    border: 3px solid var(--peach);
+    border-radius: 22px;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+    pointer-events: none;
+  }
+  .order-bubble::after { content: ""; position: absolute; left: 50%; bottom: -14px; width: 22px; height: 22px; background: #FFFFFF; border-right: 3px solid var(--peach); border-bottom: 3px solid var(--peach); transform: translateX(-50%) rotate(45deg); }
+  .order-bubble.fresh { animation: bubble 0.5s cubic-bezier(.2, 1.6, .4, 1); }
+  .order-bubble ul { list-style: none; margin: 0; padding: 0; display: flex; gap: 8px; }
+  .order-bubble li { position: relative; width: 60px; height: 60px; }
+  .order-bubble li img { width: 60px; height: 60px; }
+  .order-bubble li b { position: absolute; right: -6px; bottom: -4px; min-width: 26px; padding: 1px 6px; border-radius: 999px; background: var(--peach); color: #FFFFFF; font: 400 18px var(--font-display); text-align: center; box-shadow: 0 2px 0 var(--peach-deep); font-variant-numeric: tabular-nums; }
+  .order-bubble li.ok img { opacity: 0.35; }
+  .order-bubble li.ok b { background: var(--leaf); box-shadow: none; }
+  .order-bubble li.ok b::before { content: "✓"; }
+  .order-bubble li.ok b { font-size: 0; }
+  .order-bubble li.ok b::before { font-size: 18px; }
+  .order-bubble .patience { position: absolute; left: 14px; right: 14px; bottom: 6px; height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
+  .order-bubble .patience b { display: block; height: 100%; background: var(--leaf); transform-origin: left; }
+  .order-bubble .patience.low b { background: var(--peach); }
+  @keyframes bubble { from { transform: translate(-50%, -100%) scale(0.3); opacity: 0; } }
+  .foods { margin-top: auto; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; max-width: 520px; width: 100%; align-self: center; }
+  .food {
+    pointer-events: auto;
+    display: grid;
+    justify-items: center;
+    gap: 2px;
+    padding: 6px 2px 8px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: 0 3px 0 var(--line);
+    font: 500 13px var(--font-body);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .food img { width: 100%; max-width: 56px; aspect-ratio: 1; }
+  .food:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
+  .food.nope { animation: nope 0.3s; }
+
+  .top-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .dev-bar { pointer-events: auto; position: fixed; right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 64px); z-index: 3; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; max-width: calc(100% - 24px); padding: 6px 8px; border-radius: 12px; background: rgba(34, 52, 58, 0.85); color: #FFFBF3; font: 12px var(--font-body); }
+  .dev-bar button { font: 12px var(--font-body); border: 0; border-radius: 8px; padding: 5px 9px; background: #FFFBF3; color: var(--ink); cursor: pointer; }
+  .dev-bar b { font-variant-numeric: tabular-nums; }
+  .sky-note { margin: auto 0 0; align-self: center; padding: 10px 20px; border-radius: 999px; background: rgba(34, 52, 58, 0.72); color: #FFFBF3; font-family: var(--font-display); font-size: 17px; text-align: center; pointer-events: none; }
+  .sky-note.show { animation: skyNote 4.2s ease-in-out forwards; }
+  .sky-note:not([hidden]) + .hint { margin-top: 0; }
+  @keyframes skyNote { 0% { opacity: 0; transform: translateY(10px); } 12%, 80% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+  .lines { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; text-align: left; font-size: 14px; }
+  .lines li { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; border-bottom: 1px dashed var(--line); }
+  .lines li b { font-weight: 500; font-variant-numeric: tabular-nums; }
+  .note { margin: 0; font-size: 12px; line-height: 1.5; color: var(--muted); }
+  .mini-seal { display: inline-grid; place-items: center; width: 18px; height: 18px; margin-right: 6px; border: 1.5px solid var(--peach); border-radius: 50%; font-style: normal; font-size: 10px; color: var(--peach-deep); vertical-align: 1px; }
+  .end-total { font-size: 15px; }
+  a.btn { display: inline-block; text-decoration: none; }
+  .link-btn { justify-self: center; border: 0; background: none; color: var(--muted); font: 13px var(--font-body); text-decoration: underline; cursor: pointer; padding: 4px; }
+  .link-btn[data-armed] { color: var(--peach-deep); font-weight: 700; }
+  .wish-layer { z-index: 4; }
+  .wish-form { display: grid; gap: 10px; text-align: left; }
+  .wish-form h2, .wish-form .eyebrow, .wish-score { text-align: center; }
+  .wish-score { margin: 0; color: var(--muted); }
+  .wish-score b { font-family: var(--font-display); font-weight: 400; font-size: 22px; color: var(--ink); }
+  .field { display: grid; gap: 4px; font-size: 14px; font-weight: 500; }
+  .field span { display: flex; justify-content: space-between; }
+  .field small { font-weight: 400; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .field input, .field textarea { font: 16px var(--font-body); color: var(--ink); background: #FFFFFF; border: 1.5px solid var(--line); border-radius: 12px; padding: 10px 12px; resize: none; -webkit-user-select: text; user-select: text; }
+  .field input:focus, .field textarea:focus { outline: none; border-color: var(--peach); }
+  .wish-error { margin: 0; min-height: 1.2em; font-size: 13px; color: var(--peach-deep); }
+  #wishDone { text-align: center; }
+  .end-total b { font-family: var(--font-display); font-weight: 400; font-size: 24px; color: var(--ink); }
+  .ending-top { align-self: center; text-align: center; padding: 14px 20px; max-width: 420px; width: 100%; box-sizing: border-box; display: grid; gap: 4px; }
+  .ending-top h2 { font-size: 26px; }
+  .ending-top p { margin: 0; font-size: 14px; line-height: 1.6; color: var(--muted); }
+  .blow { margin-top: auto; align-self: center; font-size: 20px; padding: 14px 34px; }
+  .ending-card { margin-top: auto; align-self: center; pointer-events: auto; }
+  .ko { font-family: "Jua", var(--font-display); letter-spacing: 0.02em; }
+  .ending-card .sign { font-family: var(--font-display); color: var(--peach-deep); }
+
+  @keyframes nope { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+  .loading {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: var(--sky);
+    font-family: var(--font-display);
+    font-size: 18px;
+    color: var(--ink);
+    transition: opacity 0.5s;
+    z-index: 5;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    text-align: center;
+  }
+  .loading.out { opacity: 0; }
+
+  @keyframes rise { from { transform: translateY(16px); opacity: 0; } }
+  @keyframes tick { from { transform: scale(1.6); opacity: 0.2; } }
+  @keyframes float { to { transform: translate(-50%, -150%); opacity: 0; } }
+  @keyframes stamp { from { transform: rotate(-30deg) scale(2.2); opacity: 0; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+  @media (max-width: 420px) {
+    .brand h1 { font-size: 20px; }
+    .stamp i { width: 36px; height: 36px; font-size: 10px; }
+  }
+</style>
+<script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+</script>
+</head>
+<body>
+<div id="loading" class="loading"><p>正在前往桃園⋯</p></div>
+<canvas id="stage" aria-label="桃園 3D 地圖"></canvas>
+
+<section id="mapUI" class="layer">
+  <header class="card top">
+    <div class="brand">
+      <h1>觀光大使的生日小旅行</h1>
+    </div>
+    <div class="collect">
+      <ol id="stampRow" class="stamps" aria-label="景點印章"></ol>
+      <span id="stampCount" class="count">0 / 5</span>
+    </div>
+    <div class="top-actions">
+      <button id="totalBtn" class="btn ghost small">總分 0</button>
+      <button id="partyBtn" class="btn small" hidden>前往生日派對</button>
+    </div>
+  </header>
+
+  <p id="skyNote" class="sky-note" hidden aria-live="polite"></p>
+  <p id="hint" class="hint">點景點出發・拖曳轉動・雙指縮放</p>
+
+  <div id="summary" class="overlay" hidden>
+    <div class="card dialog">
+      <span class="eyebrow">結算</span>
+      <h2>你的總分</h2>
+      <div class="big" id="sumTotal">0</div>
+      <ul id="sumRows" class="lines"></ul>
+      <p id="sumNote" class="note"></p>
+      <div class="actions">
+        <button id="sumClose" class="btn ghost">關閉</button>
+        <button id="sumWish" class="btn" hidden>送出生日祝福</button>
+        <a id="sumWall" class="btn" href="wall.html#me" hidden>看祝福牆</a>
+      </div>
+      <button id="sumReset" class="link-btn" hidden>重置，重新挑戰</button>
+    </div>
+  </div>
+
+  <div id="devBar" class="dev-bar" hidden>
+    <span>開發者模式</span>
+    <button data-dev="reset">重置進度</button>
+    <button data-dev="clear">全部通關</button>
+    <button data-dev="earlier" aria-label="天色往前">◀</button>
+    <span>天色 <b id="devSky">–</b></span>
+    <button data-dev="later" aria-label="天色往後">▶</button>
+  </div>
+
+  <article id="sheet" class="card sheet" hidden>
+    <button id="sheetClose" class="icon-btn" aria-label="關閉">×</button>
+    <span id="sheetArea" class="eyebrow"></span>
+    <h2 id="sheetName"></h2>
+    <p id="sheetBlurb"></p>
+    <div class="sheet-foot">
+      <div class="game-chip"><span class="label">關卡</span><strong id="sheetGame"></strong></div>
+      <button id="sheetGo" class="btn">開始挑戰</button>
+    </div>
+  </article>
+</section>
+
+<section id="gameUI" class="layer" hidden>
+  <div class="hud">
+    <button id="gBack" class="btn ghost small" aria-label="回到地圖">←</button>
+    <div class="card hud-score"><span class="label">分數</span><strong id="gScore">0</strong><span id="gGoal" class="goal"></span></div>
+    <div class="card hud-time"><span id="gTimeLabel" class="label">剩餘</span><strong id="gTime">30</strong><span id="gTimeUnit" class="of">秒</span><i class="bar"><b id="gBar"></b></i></div>
+    <button id="gMute" class="btn ghost small mute" aria-pressed="true">音效</button>
+  </div>
+  <div id="gExtra" class="extra"></div>
+  <div id="gCount" class="countdown" hidden>3</div>
+  <div id="gPops" class="pops"></div>
+
+  <div id="gHowto" class="overlay" hidden>
+    <div class="card dialog">
+      <span id="gHowEyebrow" class="eyebrow"></span>
+      <h2 id="gHowTitle"></h2>
+      <ul id="gRules" class="rules"></ul>
+      <div class="actions"><button id="gStart" class="btn">開始</button></div>
+    </div>
+  </div>
+
+  <div id="gResult" class="overlay" hidden>
+    <div class="card dialog">
+      <div id="gSeal" class="seal"><span>桃園</span><b id="gSealName"></b><span>印章</span></div>
+      <h2 id="gResTitle"></h2>
+      <div class="big"><span id="gResScore">0</span><small>分</small></div>
+      <ul id="gResLines" class="lines"></ul>
+      <p id="gResText"></p>
+      <span class="best">這關成績 <span id="gResBest">0</span>・總分 <span id="gResTotal">0</span></span>
+      <div class="actions">
+        <button id="gAgain" class="btn ghost">再挑戰一次</button>
+        <button id="gExit" class="btn">回到地圖</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="endingUI" class="layer" hidden>
+  <header class="card ending-top">
+    <span class="eyebrow" lang="ko">생일 축하해 슈화야~</span>
+    <h2 id="endTitle"></h2>
+    <p id="endText"></p>
+  </header>
+  <button id="endBlow" class="btn blow">吹蠟燭</button>
+  <article id="endCard" class="card dialog ending-card" hidden>
+    <h2 class="ko" lang="ko">생일 축하해, 슈화야~!</h2>
+    <p>謝謝妳帶我們走過大溪老街、拉拉山、石門水庫、Xpark 和桃園觀光夜市。新的一歲，願每一天都像拉拉山的水蜜桃一樣甜。</p>
+    <p class="sign">來自全世界的 Neverland</p>
+    <p class="end-total">你的總分 <b id="endTotal">0</b></p>
+    <div class="actions">
+      <button id="endWish" class="btn">送出生日祝福</button>
+      <a id="endWall" class="btn" href="wall.html#me" hidden>看祝福牆</a>
+    </div>
+    <div class="actions">
+      <button id="endAgain" class="btn ghost small">再放一次煙火</button>
+      <button id="endExit" class="btn ghost small">回到地圖</button>
+    </div>
+  </article>
+</section>
+
+<section id="wishUI" class="layer wish-layer" hidden>
+  <div class="overlay">
+    <div class="card dialog">
+      <form id="wishForm" class="wish-form" novalidate>
+        <span class="eyebrow">送出生日祝福</span>
+        <h2>寫給舒華</h2>
+        <p class="wish-score">你的總分 <b id="wishTotal">0</b></p>
+        <label class="field">
+          <span>名字 <small id="wishNameCount">0/10</small></span>
+          <input id="wishName" name="name" type="text" maxlength="10" autocomplete="nickname" autocapitalize="off" spellcheck="false" placeholder="英文字母、數字或空白" required>
+        </label>
+        <label class="field">
+          <span>生日祝福 <small id="wishTextCount">0/30</small></span>
+          <textarea id="wishText" name="wish" rows="2" placeholder="最多 30 個字" required></textarea>
+        </label>
+        <p id="wishError" class="wish-error" aria-live="polite"></p>
+        <div class="actions">
+          <button id="wishClose" type="button" class="btn ghost">之後再說</button>
+          <button type="submit" class="btn">送出</button>
+        </div>
+      </form>
+      <div id="wishDone" class="wish-form" hidden>
+        <div class="seal fresh"><span>祝福</span><b>已送出</b><span>1.6</span></div>
+        <h2>謝謝你的祝福！</h2>
+        <p id="wishDoneText"></p>
+        <div class="actions">
+          <button id="wishDoneClose" type="button" class="btn ghost">回到遊戲</button>
+          <a class="btn" href="wall.html#me">看祝福牆</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>小狼模型檢視</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+  /* Layout: full-bleed turntable stage; one inspector panel docked right (desktop) or as a bottom sheet (phone). */
+  :root {
+    --ink: #22343A;
+    --muted: #5C6F74;
+    --paper: #FFFBF3;
+    --line: #E8DDCB;
+    --peach: #E8685C;
+    --peach-deep: #C84B40;
+    --chip: #F3ECE0;
+    --tint: #FCE3DE;
+    --font-display: "Huninn", "PingFang TC", "Noto Sans TC", sans-serif;
+    --font-body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    color-scheme: light;
+  }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; margin: 0; }
+  body { background: #CFE8EE; color: var(--ink); font-family: var(--font-body); overflow: hidden; -webkit-tap-highlight-color: transparent; }
+  #stage { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+  .panel {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 16px);
+    right: calc(env(safe-area-inset-right, 0px) + 16px);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+    width: 340px;
+    box-sizing: border-box;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    box-shadow: 0 10px 30px rgba(34, 52, 58, 0.16);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .panel-top { display: grid; gap: 12px; padding: 16px 16px 12px; border-bottom: 1px solid var(--line); }
+  .head { display: flex; align-items: center; gap: 12px; }
+  .head h1 { font-family: var(--font-display); font-weight: 400; font-size: 21px; margin: 0; line-height: 1.2; }
+  .head p { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
+  .head > div { flex: 1; min-width: 0; }
+  #panelToggle { display: none; }
+  .scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 16px 16px; display: grid; gap: 16px; align-content: start; }
+
+  .group { display: grid; gap: 8px; }
+  .group h2 { margin: 0; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; color: var(--muted); }
+  .seg { display: grid; grid-template-columns: repeat(auto-fit, minmax(52px, 1fr)); gap: 6px; }
+  .seg.tabs { grid-template-columns: 1fr 1fr; background: var(--chip); padding: 4px; border-radius: 12px; gap: 4px; }
+  .seg.tabs button { background: transparent; font-weight: 700; }
+  .seg.tabs button[aria-pressed="true"] { background: var(--paper); color: var(--ink); box-shadow: 0 1px 3px rgba(34, 52, 58, 0.15); }
+  .seg.muted { opacity: 0.4; pointer-events: none; }
+  .seg button, .tool {
+    font: 500 14px var(--font-body);
+    color: var(--ink);
+    background: var(--chip);
+    border: 1px solid transparent;
+    border-radius: 10px;
+    padding: 8px 6px;
+    cursor: pointer;
+  }
+  .tool:disabled { opacity: 0.45; cursor: default; }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+  .swatch { display: grid; justify-items: center; gap: 4px; }
+  .swatch i { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--paper); box-shadow: 0 0 0 1px var(--line); }
+  button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+  .switches { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+  .switch { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
+  .switch input { appearance: none; -webkit-appearance: none; width: 34px; height: 20px; border-radius: 999px; background: var(--line); position: relative; margin: 0; cursor: pointer; flex: none; transition: background 0.15s; }
+  .switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #FFFFFF; transition: transform 0.15s; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2); }
+  .switch input:checked { background: var(--peach); }
+  .switch input:checked::after { transform: translateX(14px); }
+
+  .compare { display: grid; gap: 8px; padding: 10px 12px; border-radius: 14px; background: var(--chip); }
+  .compare.on { background: var(--tint); }
+  .refs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+  .refs button { display: grid; gap: 3px; padding: 0; border: 0; background: none; cursor: pointer; font: 11px var(--font-body); color: var(--muted); }
+  .refs img { width: 100%; aspect-ratio: 1; object-fit: contain; background: #FFFFFF; border-radius: 8px; border: 2px solid transparent; box-sizing: border-box; }
+  .refs button[aria-pressed="true"] img { border-color: var(--peach); }
+  .refs button[aria-pressed="true"] { color: var(--peach-deep); font-weight: 700; }
+  .pip {
+    position: fixed;
+    left: calc(env(safe-area-inset-left, 0px) + 16px);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+    width: min(30vw, 340px);
+    background: #FFFFFF;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(34, 52, 58, 0.16);
+    overflow: hidden;
+  }
+  .pip img { display: block; width: 100%; height: auto; }
+  .pip button { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; border-radius: 50%; border: 0; background: rgba(34, 52, 58, 0.7); color: #FFFFFF; font-size: 16px; cursor: pointer; }
+  .pip span { position: absolute; left: 8px; top: 8px; font-size: 11px; background: rgba(255, 251, 243, 0.9); padding: 2px 8px; border-radius: 999px; }
+  .range { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .range input { flex: 1; min-width: 0; accent-color: var(--peach); }
+  .note { margin: 0; font-size: 12px; line-height: 1.5; color: var(--muted); }
+
+  /* tuning */
+  .quick { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 10px 12px; border-radius: 14px; background: var(--chip); }
+  .quick .range { flex: 1 1 120px; }
+  .tgroup { border: 1px solid var(--line); border-radius: 14px; background: #FFFFFF; }
+  .tgroup summary { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 10px 12px; cursor: pointer; font-family: var(--font-display); font-size: 16px; list-style: none; }
+  .tgroup summary::-webkit-details-marker { display: none; }
+  .tgroup summary::after { content: "＋"; font-family: var(--font-body); font-size: 14px; color: var(--muted); }
+  .tgroup[open] summary::after { content: "－"; }
+  .tgroup .count { margin-left: auto; font-family: var(--font-body); font-size: 12px; color: var(--peach-deep); }
+  .rows { display: grid; gap: 2px; padding: 0 12px 10px; }
+  .trow { display: grid; grid-template-columns: 76px minmax(0, 1fr) 52px; align-items: center; gap: 8px; min-height: 32px; }
+  .trow label { font-size: 13px; color: var(--ink); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .trow input[type="range"] { width: 100%; margin: 0; accent-color: var(--ink); }
+  .trow input[type="color"] { width: 100%; height: 26px; border: 1px solid var(--line); border-radius: 8px; padding: 0 2px; background: #FFFFFF; cursor: pointer; }
+  .trow output { font-size: 12px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+  .trow.changed label { color: var(--peach-deep); font-weight: 700; }
+  .trow.changed label::before { content: "● "; font-size: 9px; vertical-align: 2px; }
+  .trow.changed input[type="range"] { accent-color: var(--peach); }
+  .trow.changed output { color: var(--peach-deep); }
+
+  .tune-foot { display: grid; gap: 10px; padding: 12px 16px calc(env(safe-area-inset-bottom, 0px) + 14px); border-top: 1px solid var(--line); background: var(--paper); }
+  .tune-foot .summary { font-size: 12px; color: var(--muted); }
+  .actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .tool.primary { background: var(--peach); color: #FFFFFF; }
+  #holdOriginal { user-select: none; -webkit-user-select: none; touch-action: none; }
+  #holdOriginal.active { background: var(--ink); color: var(--paper); }
+  #copyText { width: 100%; box-sizing: border-box; font: 12px ui-monospace, Menlo, monospace; border: 1px solid var(--line); border-radius: 8px; padding: 8px; resize: vertical; min-height: 60px; }
+  .copy-note { font-size: 12px; color: var(--peach-deep); min-height: 1em; }
+
+  .foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px solid var(--line); padding-top: 12px; font-size: 12px; color: var(--muted); }
+  .foot b { font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .foot .tool.primary { padding: 8px 14px; }
+  .back { color: var(--muted); font-size: 12px; }
+
+  @media (max-width: 700px) {
+    .panel {
+      top: auto;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: auto;
+      height: 55%;
+      border-radius: 20px 20px 0 0;
+      border-bottom: 0;
+    }
+    .panel-top, .scroll, .tune-foot {
+      padding-left: max(16px, env(safe-area-inset-left, 0px));
+      padding-right: max(16px, env(safe-area-inset-right, 0px));
+    }
+    #panelToggle { display: block; padding: 6px 12px; }
+    .pip { top: calc(env(safe-area-inset-top, 0px) + 12px); bottom: auto; width: 38vw; }
+    body.collapsed .panel { height: auto; }
+    body.collapsed .panel-top .tabs, body.collapsed .scroll, body.collapsed .tune-foot { display: none; }
+    body.collapsed .panel-top { border-bottom: 0; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); }
+  }
+</style>
+<script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+</script>
+</head>
+<body>
+<canvas id="stage" aria-label="小狼 3D 模型"></canvas>
+
+<aside class="panel">
+  <div class="panel-top">
+    <div class="head">
+      <div>
+        <h1>小狼模型檢視</h1>
+        <p>拖曳旋轉・滾輪或雙指縮放・右鍵平移</p>
+      </div>
+      <button id="panelToggle" class="tool" aria-expanded="true">收合</button>
+    </div>
+    <div id="tabs" class="seg tabs">
+      <button data-v="view">檢視</button>
+      <button data-v="tune">調整</button>
+    </div>
+  </div>
+
+  <!-- view tab -->
+  <div id="viewTab" class="scroll">
+    <section class="group">
+      <h2>參考圖</h2>
+      <div id="refs" class="refs"></div>
+      <p class="note">點一張圖會在左下角顯示，鏡頭也會轉到差不多的角度。</p>
+    </section>
+
+    <section class="group">
+      <h2>正面疊圖比對</h2>
+      <div id="compareBox" class="compare">
+        <label class="switch"><input data-opt="compare" type="checkbox">疊上正面圖</label>
+        <div class="range"><input data-opacity type="range" min="0" max="100" value="50" aria-label="參考圖透明度"><span data-opacity-val>50%</span></div>
+        <p class="note">用無透視的正面鏡頭，把 3d1 正面圖和模型同比例疊在一起。</p>
+      </div>
+    </section>
+
+    <section class="group">
+      <h2>視角</h2>
+      <div id="views" class="seg">
+        <button data-v="front">正面</button>
+        <button data-v="three">斜側</button>
+        <button data-v="side">側面</button>
+        <button data-v="other">另一側</button>
+        <button data-v="back">背面</button>
+        <button data-v="top">俯視</button>
+      </div>
+    </section>
+
+    <section class="group">
+      <h2>動作</h2>
+      <div id="poses" class="seg">
+        <button data-v="idle">待機</button>
+        <button data-v="walk">走路</button>
+        <button data-v="wave">揮手</button>
+        <button data-v="basket">抱籃子</button>
+      </div>
+    </section>
+
+    <section class="group">
+      <h2>顯示</h2>
+      <div class="switches">
+        <label class="switch"><input data-opt="animate" type="checkbox">播放動作</label>
+        <label class="switch"><input data-opt="spin" type="checkbox">自動旋轉</label>
+        <label class="switch"><input data-opt="outline" type="checkbox">黑色描邊</label>
+        <label class="switch"><input data-opt="wire" type="checkbox">線框</label>
+      </div>
+    </section>
+
+    <section class="group">
+      <h2>背景</h2>
+      <div id="bgs" class="seg">
+        <button data-v="sky" class="swatch"><i style="background:#CFE8EE"></i>天空</button>
+        <button data-v="paper" class="swatch"><i style="background:#F5F2EC"></i>米白</button>
+        <button data-v="grass" class="swatch"><i style="background:#8CC56F"></i>草地</button>
+        <button data-v="night" class="swatch"><i style="background:#20262E"></i>夜晚</button>
+      </div>
+    </section>
+
+    <div class="foot">
+      <span>三角形 <b id="tris">0</b></span>
+      <a class="back" href="index.html">回遊戲</a>
+      <button id="shot" class="tool primary">截圖</button>
+    </div>
+  </div>
+
+  <!-- tune tab -->
+  <div id="tuneTab" class="scroll" hidden>
+    <div class="quick">
+      <label class="switch"><input data-opt="compare" type="checkbox">疊上正面圖</label>
+      <div class="range"><input data-opacity type="range" min="0" max="100" value="50" aria-label="參考圖透明度"><span data-opacity-val>50%</span></div>
+      <label class="switch"><input data-opt="animate" type="checkbox">播放動作</label>
+    </div>
+    <p class="note">拉動滑桿會即時更新模型。點兩下項目名稱可以恢復那一項的預設值，有改過的項目會標成紅色。</p>
+    <div id="tuneGroups" class="group"></div>
+  </div>
+  <div class="tune-foot" data-tune-only>
+    <span id="tuneSummary" class="summary"></span>
+    <div class="actions">
+      <button id="holdOriginal" class="tool">按住看原版</button>
+      <button id="undo" class="tool">復原</button>
+      <button id="resetAll" class="tool">全部重設</button>
+    </div>
+    <button id="copy" class="tool primary">複製設定給 Claude</button>
+    <span id="copyNote" class="copy-note" aria-live="polite"></span>
+    <textarea id="copyText" readonly hidden aria-label="調整設定文字"></textarea>
+  </div>
+</aside>
+
+<figure id="pip" class="pip" hidden><img id="pipImg" alt=""><span id="pipLabel"></span><button id="pipClose" aria-label="關閉參考圖">×</button></figure>
+
+<script type="module" src="src/viewer.js"></script>
+</body>
+</html>
