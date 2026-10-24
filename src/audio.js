@@ -44,5 +44,10 @@ export const sfx = {
     [1047, 1319, 1568].forEach((f) => tone(f, 0.55, { type: 'triangle', vol: 0.07, delay: 0.24 }));
     [2093, 2637, 3136].forEach((f, i) => tone(f, 0.14, { vol: 0.035, delay: 0.38 + i * 0.07 }));
   },
+  // a new thing to look for (Xpark): a bubbly two-note bloop
+  ask: () => {
+    tone(440, 0.16, { type: 'sine', vol: 0.12, slide: 1.9 });
+    tone(880, 0.14, { type: 'triangle', vol: 0.08, slide: 1.3, delay: 0.1 });
+  },
   pop: () => tone(520, 0.08, { type: 'triangle', vol: 0.1, slide: 1.6 }),
 };

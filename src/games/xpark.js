@@ -5,6 +5,9 @@ import { sfx } from '../audio.js';
 import { clamp, tapper, hitSphere, idle } from './common.js';
 import { tally } from './shell.js';
 
+// raw points for a run that just meets the target: 20 finds, about 2 s each, one slip
+const PAR = 6200;
+
 const DURATION = 40;
 
 // thin fins: a forked tail fanning out behind the body (narrow where it joins), and a dorsal fin
@@ -256,7 +259,7 @@ export function createXparkGame(shell, { canvas }) {
   let found = 0;
   let streak = 0;
   let askedAt = 0;
-  const points = tally();
+  const points = tally(PAR); // raw points scaled so a just-passing run is about 1,000
   let want = null;
   let clock = 0;
   let card = null;
@@ -279,6 +282,7 @@ export function createXparkGame(shell, { canvas }) {
       card.classList.remove('flip');
       void card.offsetWidth;
       card.classList.add('flip');
+      if (playing) sfx.ask();
     }
   }
 
@@ -296,7 +300,7 @@ export function createXparkGame(shell, { canvas }) {
         const base = points.add('找到', 100);
         // continuous: every tenth of a second faster is worth more
         const quick = points.add('反應速度', 75 * Math.max(0, 4 - (clock - askedAt)));
-        const chain = points.add('連續答對', (base + quick) * Math.min(0.5, 0.05 * (streak - 1)));
+        const chain = points.addScaled('連續答對', (base + quick) * Math.min(0.5, 0.05 * (streak - 1)));
         sfx.good();
         shell.pop('+' + Math.round(base + quick + chain), 'good', cr.group.position, camera);
         cr.leaving = true;
@@ -308,9 +312,9 @@ export function createXparkGame(shell, { canvas }) {
       } else {
         time = Math.max(0, time - 2);
         streak = 0;
-        points.add('點錯', -80);
+        const lost = points.add('點錯', -80);
         sfx.bad();
-        shell.pop(`那是${KINDS[cr.type].name}・−80`, 'bad', cr.group.position, camera);
+        shell.pop(`那是${KINDS[cr.type].name}・−${Math.round(-lost)}`, 'bad', cr.group.position, camera);
         cr.shake = 0.4;
       }
     }

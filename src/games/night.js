@@ -2,8 +2,11 @@ import * as THREE from 'three';
 import { mat, flat, mesh, makeLabel } from '../models.js';
 import { makeWolf } from '../wolf.js';
 import { sfx } from '../audio.js';
-import { idle } from './common.js';
+import { idle, clamp } from './common.js';
 import { tally } from './shell.js';
+
+// raw points for a run that just meets the target: 14 orders (about 46 dishes), two thirds of the patience left, a few slips
+const PAR = 10600;
 
 const DURATION = 60;
 
@@ -184,14 +187,14 @@ export function createNightGame(shell, { renderer }) {
     stamp: '夜市',
     eyebrow: '桃園觀光夜市・桃園市桃園區',
     title: '夜市限時點餐',
-    target: 8,
+    target: 14,
     progressLabel: '完成',
     progressUnit: '單',
     rules: [
       { dot: '#D9A441', text: '客人頭上的泡泡就是點單，點下面的餐點放上托盤' },
       { dot: '#E2C49C', text: '托盤剛好符合點單就會自動出餐，客人剩的耐心越多分數越高' },
       { dot: '#B24A3A', text: '整單沒放錯另外加分；放錯會扣分，客人的耐心也會少一點' },
-      { dot: '#E8685C', text: '60 秒內完成 8 單，就能蓋夜市印章' },
+      { dot: '#E8685C', text: '60 秒內完成 14 單，就能蓋夜市印章' },
     ],
     passText: '雞排、珍奶都賣光了，夜市老闆要請小狼吃宵夜！',
     hint: '先看清楚點單再動手，放錯會浪費客人的耐心。',
@@ -340,12 +343,13 @@ export function createNightGame(shell, { renderer }) {
   let time = DURATION;
   let served = 0;
   let slips = 0; // mistakes on the current order
-  const points = tally();
+  const points = tally(PAR); // raw points scaled so a just-passing run is about 1,000
   let clock = 0;
   let order = null; // { items: {id: count}, patience, max }
   let onTray = [];
   let customer = null;
-  let walk = null; // { from, to, t, then }
+  let walk = null; // the customer walking up to the stall: { from, to, t }
+  const leavers = []; // served (or fed-up) customers walking off: { c, from, to, t }
   let ui = null;
 
   function mountUI(root) {
@@ -388,7 +392,7 @@ export function createNightGame(shell, { renderer }) {
     order = { items, patience: max, max, size };
     slips = 0;
     onTray = [];
-    clearTray();
+    clearTray(true); // the last order may still be sliding over to its customer
     renderTicket();
     // pop the bubble in so a new order is impossible to miss
     const bubble = ui?.querySelector('.order-bubble');
@@ -400,12 +404,12 @@ export function createNightGame(shell, { renderer }) {
     sfx.tick();
   }
 
-  function clearTray() {
-    while (tray.children.length > 1) tray.remove(tray.children[1]);
+  function clearTray(keepHandOver = false) {
+    for (const it of tray.children.slice(1)) if (!keepHandOver || it.userData.handOver === undefined) tray.remove(it);
   }
 
+  // the next customer walks straight in as the last one leaves, and orders on reaching the stall
   function arrive() {
-    if (customer) scene.remove(customer);
     // start the new customer at the entrance before it is ever drawn: a fresh model sits at the
     // origin, which is the middle of the stall, and would flash there for a frame
     const from = new THREE.Vector3(-6, 0, 1.4);
@@ -413,15 +417,22 @@ export function createNightGame(shell, { renderer }) {
     customer.position.copy(from);
     customer.rotation.y = Math.PI / 2 - 0.5;
     scene.add(customer);
-    walk = { from, to: new THREE.Vector3(customerX, 0, 1.25), t: 0, then: newOrder };
+    walk = { from, to: new THREE.Vector3(customerX, 0, 1.25), t: 0 };
+    renderTicket();
   }
 
   function leave(happy) {
     order = null;
-    renderTicket();
     const c = customer;
-    if (happy && c) c.userData.jump = 0.5;
-    walk = { from: c.position.clone(), to: new THREE.Vector3(-6.5, 0, 2.2), t: happy ? -0.5 : 0, leaving: true, then: () => playing && arrive() };
+    if (c) {
+      if (happy) c.userData.jump = 0.5;
+      // off along the front lane, after a happy hop; the next customer comes in on the back lane
+      leavers.push({ c, from: c.position.clone(), to: new THREE.Vector3(-6.5, 0, 2.4), t: happy ? -0.45 : 0 });
+    }
+    customer = null;
+    walk = null;
+    if (playing) arrive();
+    else renderTicket();
   }
 
   function add(id, button) {
@@ -461,7 +472,7 @@ export function createNightGame(shell, { renderer }) {
       reach = -0.7;
       // hand the food over: it slides toward the customer and shrinks away
       // (after a beat, so the last dish finishes popping up before it goes)
-      tray.children.slice(1).forEach((it) => (it.userData.handOver = -0.3));
+      tray.children.slice(1).forEach((it) => Object.assign(it.userData, { handOver: -0.3, to: customer })); // goes to this customer, even as the next one walks in
       sfx.good();
       shell.pop('出餐！+' + Math.round(base + fast + clean), 'good', tray.position.clone().setY(1.6), camera);
       shell.hud(points.total, served, Math.ceil(time), time / DURATION);
@@ -480,6 +491,7 @@ export function createNightGame(shell, { renderer }) {
     if (customer) scene.remove(customer);
     customer = null;
     walk = null;
+    leavers.splice(0).forEach((l) => scene.remove(l.c));
     renderTicket();
     shell.hud(0, 0, DURATION, 1);
   }
@@ -514,22 +526,32 @@ export function createNightGame(shell, { renderer }) {
     }
 
     if (walk && customer) {
-      walk.t += dt / 1.1;
-      const t = Math.max(0, Math.min(1, walk.t));
+      walk.t += dt / 0.8;
+      const t = Math.min(1, walk.t);
       customer.position.lerpVectors(walk.from, walk.to, t);
-      customer.position.y = Math.abs(Math.sin(t * Math.PI * 5)) * 0.08;
-      customer.rotation.y = walk.leaving ? -Math.PI / 2 - 0.4 : Math.PI / 2 - 0.5;
+      customer.position.y = Math.abs(Math.sin(t * Math.PI * 4)) * 0.08;
+      customer.rotation.y = Math.PI / 2 - 0.5;
       if (walk.t >= 1) {
-        const then = walk.then;
         walk = null;
         customer.position.y = 0;
-        customer.rotation.y = Math.PI / 2 - 0.5;
-        then();
+        newOrder();
       }
     }
-    if (customer?.userData.jump > 0) {
-      customer.userData.jump -= dt;
-      customer.position.y = Math.sin((customer.userData.jump / 0.5) * Math.PI) * 0.35;
+    for (const l of [...leavers]) {
+      l.t += dt / 1.1;
+      const t = clamp(l.t, 0, 1);
+      l.c.position.lerpVectors(l.from, l.to, t);
+      if (l.c.userData.jump > 0) {
+        l.c.userData.jump -= dt;
+        l.c.position.y = Math.sin((Math.max(0, l.c.userData.jump) / 0.5) * Math.PI) * 0.35;
+      } else {
+        l.c.position.y = Math.abs(Math.sin(t * Math.PI * 5)) * 0.08;
+        l.c.rotation.y = -Math.PI / 2 - 0.4;
+      }
+      if (l.t >= 1) {
+        scene.remove(l.c);
+        leavers.splice(leavers.indexOf(l), 1);
+      }
     }
     if (customer && !walk) customer.userData.head.rotation.z = Math.sin(clock * 2) * 0.08;
 
@@ -543,7 +565,7 @@ export function createNightGame(shell, { renderer }) {
       if (u.handOver !== undefined) {
         u.handOver += dt / 0.5;
         if (u.handOver < 0) continue; // still on the tray for a moment
-        const toward = customer ? tray.worldToLocal(customer.position.clone().setY(1.0)) : item.position;
+        const toward = u.to ? tray.worldToLocal(u.to.position.clone().setY(1.0)) : item.position;
         item.position.lerp(toward, Math.min(1, dt * 6));
         item.scale.setScalar(Math.max(0.01, 1.25 * (1 - u.handOver)));
         if (u.handOver >= 1) tray.remove(item);

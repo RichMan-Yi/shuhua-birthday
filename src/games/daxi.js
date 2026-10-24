@@ -5,6 +5,9 @@ import { sfx } from '../audio.js';
 import { tapper, lightRig, idle } from './common.js';
 import { tally } from './shell.js';
 
+// raw points for a run that just meets the target: 5 perfect rounds (lengths 3–5) with half the input time left, partial taps on the rest
+const PAR = 4200;
+
 const FLAVORS = [
   { name: '原味', color: '#D9A86C' },
   { name: '滷味', color: '#8A5432' },
@@ -152,7 +155,7 @@ export function createDaxiGame(shell, { canvas }) {
   let answer = 0; // input time left this round
   let clock = 0;
   let status = null;
-  const points = tally();
+  const points = tally(PAR); // raw points scaled so a just-passing run is about 1,000
 
   const say = (text) => status && (status.textContent = text);
   const roundText = () => `${Math.min(round + 1, ROUND_LENGTHS.length)}/${ROUND_LENGTHS.length}`;
@@ -184,7 +187,7 @@ export function createDaxiGame(shell, { canvas }) {
       const base = points.add('完成回合', 60 * len);
       // continuous: every bit of time left is worth points
       const speed = points.add('速度加成', 150 * len * (answer / allowed));
-      const combo = points.add('連續完美', (base + speed) * Math.min(0.5, 0.1 * (streak - 1)));
+      const combo = points.addScaled('連續完美', (base + speed) * Math.min(0.5, 0.1 * (streak - 1)));
       shell.pop(`+${Math.round(base + speed + combo)}`, 'gold', at, camera);
       say(streak > 1 ? `完美！連續 ${streak} 回合` : '完美！');
       sfx.good();

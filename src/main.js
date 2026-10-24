@@ -380,7 +380,7 @@ if (dev) {
       // every stamp with a plausible score, so the party and the wish form can be tested
       SPOTS.forEach((s) => {
         save.stamps[s.id] = true;
-        save.scores[s.id] ??= 2500 + Math.round(Math.random() * 2000);
+        save.scores[s.id] ??= 850 + Math.round(Math.random() * 500); // about a just-passing run (1,000)
       });
       save.partySeen = false;
       save.submitted = null;

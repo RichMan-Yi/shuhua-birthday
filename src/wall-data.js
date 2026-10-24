@@ -45,10 +45,11 @@ function makeName() {
 function gauss() {
   return Math.sqrt(-2 * Math.log(1 - rand())) * Math.cos(2 * Math.PI * rand());
 }
+// totals on the normalized scale: five levels at about 1,000 each for a just-passing run
 function scoreSample() {
-  let s = 14000 + gauss() * 2600;
-  if (rand() < 0.03) s += 3000 + rand() * 6000; // a few very strong runs
-  return Math.round(Math.min(27000, Math.max(8200, s)));
+  let s = 5600 + gauss() * 700;
+  if (rand() < 0.03) s += 1000 + rand() * 1800; // a few very strong runs
+  return Math.round(Math.min(9600, Math.max(5000, s)));
 }
 const fakeEntry = (at) => ({ name: makeName(), wish: [...pick(WISHES)].slice(0, 30).join(''), score: scoreSample(), at });
 
@@ -90,7 +91,7 @@ export function createCrowd({ simulate = false } = {}) {
     // a simulated player sending a wish right now; now and then a big score shakes up the podium
     arrive() {
       const p = fakeEntry(Date.now());
-      if (ranked.length > 2 && Math.random() < 0.06) p.score = Math.round(ranked[2].score + 50 + Math.random() * 1500);
+      if (ranked.length > 2 && Math.random() < 0.06) p.score = Math.round(ranked[2].score + 20 + Math.random() * 400);
       people.push(p);
       ranked = [...people].sort(byRank);
       reindex();

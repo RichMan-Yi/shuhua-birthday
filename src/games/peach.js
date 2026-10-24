@@ -5,6 +5,9 @@ import { sfx } from '../audio.js';
 import { clamp, steering, lightRig } from './common.js';
 import { tally } from './shell.js';
 
+// raw points for a run that just meets the target: 30 harvest (about 24 peaches and 2 golden), aim and chains at about half
+const PAR = 4100;
+
 const DURATION = 30;
 const SKY = '#BFE2EA';
 
@@ -135,7 +138,7 @@ export function createPeachGame(shell) {
   let time = DURATION;
   let harvest = 0; // stamp progress: peach 1, gold 3, bee −2
   let combo = 0;
-  const points = tally();
+  const points = tally(PAR); // raw points scaled so a just-passing run is about 1,000
   let spawnT = 0;
   let stun = 0;
   let vx = 0;
@@ -167,7 +170,7 @@ export function createPeachGame(shell) {
       harvest = Math.max(0, harvest - 2);
       combo = 0;
       stun = 0.6;
-      shell.pop('−' + Math.abs(points.add('碰到蜜蜂', -200)), 'bad', it.obj.position, camera);
+      shell.pop('−' + Math.round(Math.abs(points.add('碰到蜜蜂', -200))), 'bad', it.obj.position, camera);
       sfx.bad();
       it.gone = true;
       return;
@@ -179,7 +182,7 @@ export function createPeachGame(shell) {
     // continuous: the closer to the middle of the basket, the more it's worth
     const off = Math.abs(it.obj.position.x - player.position.x) / (0.62 * k);
     const aim = points.add('接得準', (gold ? 120 : 60) * Math.max(0, 1 - off));
-    const chain = points.add('連續接到', base * Math.min(0.6, 0.05 * (combo - 1)));
+    const chain = points.addScaled('連續接到', base * Math.min(0.6, 0.05 * (combo - 1)));
     shell.pop('+' + Math.round(base + aim + chain), gold ? 'gold' : 'good', it.obj.position, camera);
     it.type === 'gold' ? sfx.gold() : sfx.pop();
     it.caught = 0.18;

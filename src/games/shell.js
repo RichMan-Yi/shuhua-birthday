@@ -3,12 +3,24 @@ import { sfx } from '../audio.js';
 
 export const fmtScore = (n) => Math.round(n).toLocaleString('en-US');
 
-// Running score with a per-source breakdown for the result card.
-export function tally() {
+// Every level is normalized so that a run that just meets its stamp target, with average bonuses,
+// scores about PAR_SCORE. Each level states `par`: its raw points for such a run (estimated from
+// its rules; see docs/specs/scoring.md). The raw rules stay as they are; points are scaled as
+// they are added, so the HUD, the pops and the result breakdown all show the same scale.
+export const PAR_SCORE = 1000;
+
+// Running score with a per-source breakdown for the result card. add() takes raw points and
+// returns them scaled, ready to show in a pop.
+export function tally(par = PAR_SCORE) {
   const parts = new Map();
+  const k = PAR_SCORE / par;
   return {
     total: 0,
-    add(label, value) {
+    add(label, raw) {
+      return this.addScaled(label, raw * k);
+    },
+    // for bonuses worked out from points already added (a streak's share of them): no second scaling
+    addScaled(label, value) {
       parts.set(label, (parts.get(label) || 0) + value);
       this.total += value;
       return value;

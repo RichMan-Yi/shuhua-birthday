@@ -5,6 +5,9 @@ import { sfx } from '../audio.js';
 import { clamp, steering, lightRig } from './common.js';
 import { tally } from './shell.js';
 
+// raw points for a run that just meets the target: 35 fish, half-height catches, a few near misses, 40 s of rowing, one hit
+const PAR = 6800;
+
 const DURATION = 40;
 const LIVES = 3;
 const SPAWN_Z = -46;
@@ -167,10 +170,13 @@ export function createShimenGame(shell) {
   }
 
   const boat = makeBoat();
+  const BOAT_HALF = 0.55 * 0.9; // half the boat's width for hits and near misses, shrunk with the boat
   const wolf = makeWolf();
   // seated on the bench, facing the camera (rowers face the stern); legs stay inside the hull
-  boat.scale.setScalar(1.25);
-  wolf.scale.setScalar(0.8 / 1.25); // the wolf keeps its size inside the bigger boat
+  // boat and wolf together at 90% (2026-10-24); the wolf stays the same size relative to the boat
+  const BOAT_SCALE = 1.25 * 0.9;
+  boat.scale.setScalar(BOAT_SCALE);
+  wolf.scale.setScalar(0.8 / 1.25);
   wolf.position.set(0, 0.1, 0.2);
   boat.add(wolf);
   scene.add(boat);
@@ -191,7 +197,7 @@ export function createShimenGame(shell) {
   let playing = false;
   let time = DURATION;
   let catchPts = 0; // stamp progress: fish 1, gold 3
-  const points = tally();
+  const points = tally(PAR); // raw points scaled so a just-passing run is about 1,000
   let lives = LIVES;
   let spawnT = 0;
   let hurt = 0;
@@ -209,14 +215,37 @@ export function createShimenGame(shell) {
   }
   const showLives = () => livesEl && (livesEl.textContent = '船身 ' + '♥'.repeat(lives) + '♡'.repeat(LIVES - lives));
 
+  // An obstacle may only go where the boat still has a way through: together with the obstacles
+  // already close to the spawn line, it must leave an open stretch the boat fits into.
+  const ROW = 4; // obstacles this close along the river count as the same row
+  function leavesAWay(x, half) {
+    const blocked = items
+      .filter((it) => (it.type === 'rock' || it.type === 'log') && Math.abs(it.obj.position.z - SPAWN_Z) < ROW)
+      .map((it) => [it.obj.position.x - it.half - BOAT_HALF, it.obj.position.x + it.half + BOAT_HALF]);
+    blocked.push([x - half - BOAT_HALF, x + half + BOAT_HALF]);
+    blocked.sort((a, b) => a[0] - b[0]);
+    // boat centres run from -W to W; look for a free stretch at least 0.35 long
+    let from = -W;
+    for (const [lo, hi] of blocked) {
+      if (lo - from >= 0.35) return true;
+      from = Math.max(from, hi);
+    }
+    return W - from >= 0.35;
+  }
+
   function spawn() {
     const r = Math.random();
-    const type = r < 0.08 ? 'gold' : r < 0.52 ? 'fish' : r < 0.82 ? 'rock' : 'log';
+    let type = r < 0.08 ? 'gold' : r < 0.52 ? 'fish' : r < 0.82 ? 'rock' : 'log';
+    let half = type === 'log' ? 0.85 : type === 'rock' ? 0.6 : 0.4;
+    let x = (Math.random() * 2 - 1) * W;
+    if (type === 'rock' || type === 'log') {
+      let tries = 12;
+      while (tries-- && !leavesAWay(x, half)) x = (Math.random() * 2 - 1) * W;
+      if (tries < 0) [type, half] = ['fish', 0.4]; // no fair place for it: a fish jumps there instead
+    }
     const obj = type === 'rock' ? makeRock() : type === 'log' ? makeLog() : makeFish(type === 'gold');
-    const x = (Math.random() * 2 - 1) * W;
     obj.position.set(x, 0, SPAWN_Z);
     scene.add(obj);
-    const half = type === 'log' ? 0.85 : type === 'rock' ? 0.6 : 0.4;
     items.push({ obj, type, half, phase: Math.random() * 6.28 });
   }
 
@@ -339,7 +368,7 @@ export function createShimenGame(shell) {
       } else {
         o.position.y = Math.sin(clock * 2 + it.phase) * 0.05;
       }
-      if (playing && Math.abs(o.position.z) < 0.7 && Math.abs(o.position.x - boat.position.x) < it.half + 0.55) {
+      if (playing && Math.abs(o.position.z) < 0.7 && Math.abs(o.position.x - boat.position.x) < it.half + BOAT_HALF) {
         if (it.type === 'fish' || it.type === 'gold') {
           const gold = it.type === 'gold';
           catchPts += gold ? 3 : 1;
@@ -355,9 +384,9 @@ export function createShimenGame(shell) {
           lives--;
           hurt = 1.2;
           it.hit = true;
-          points.add('撞到障礙', -150);
+          const lost = points.add('撞到障礙', -150);
           sfx.bad();
-          shell.pop('撞到了！−150', 'bad', o.position.clone().setY(1), camera);
+          shell.pop(`撞到了！−${Math.round(-lost)}`, 'bad', o.position.clone().setY(1), camera);
           showLives();
           if (lives <= 0) end();
         }
@@ -365,7 +394,7 @@ export function createShimenGame(shell) {
       // near miss: an obstacle that slips by close to the boat earns a bonus, closer is more
       if (playing && !it.passed && !it.hit && it.type !== 'fish' && it.type !== 'gold' && o.position.z > 0.7) {
         it.passed = true;
-        const gap = Math.abs(o.position.x - boat.position.x) - (it.half + 0.55);
+        const gap = Math.abs(o.position.x - boat.position.x) - (it.half + BOAT_HALF);
         if (gap > 0 && gap < 0.6) {
           const v = points.add('擦身而過', 90 * (1 - gap / 0.6));
           shell.pop('驚險！+' + Math.round(v), 'good', o.position.clone().setY(0.9), camera);
