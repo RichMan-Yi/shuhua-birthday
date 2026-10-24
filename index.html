@@ -204,6 +204,8 @@
   .hud-score .goal { grid-column: 1 / -1; font-size: 11px; color: var(--muted); white-space: nowrap; }
   .hud-score.done .goal { color: var(--leaf); font-weight: 700; }
   .hud-score.done .goal::after { content: " ✓"; }
+  .hud-score.reached { animation: reached 0.6s cubic-bezier(.2, 1.6, .4, 1); }
+  @keyframes reached { 0% { transform: scale(1); } 35% { transform: scale(1.18); box-shadow: 0 0 0 4px var(--gold); } 100% { transform: none; } }
   .bar { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: var(--line); }
   .bar b { display: block; height: 100%; background: var(--peach); transform-origin: left; }
 
@@ -232,6 +234,8 @@
   }
   .pop.gold { color: var(--gold); font-size: 32px; }
   .pop.bad { color: var(--ink); }
+  .pop.goal { color: var(--gold); font-size: 28px; white-space: nowrap; text-shadow: 0 0 6px #FFFFFF, 0 0 3px #FFFFFF, 0 2px 0 var(--peach-deep); animation: goalPop 1.6s ease-out forwards; }
+  @keyframes goalPop { 0% { transform: translate(-50%, -50%) scale(0.4); opacity: 0; } 15% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; } 70% { transform: translate(-50%, -70%) scale(1); opacity: 1; } 100% { transform: translate(-50%, -110%); opacity: 0; } }
 
   .overlay {
     position: fixed;

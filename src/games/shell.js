@@ -66,6 +66,7 @@ export function createShell({ onResult, onExit }) {
   let counting = false;
   let goTimer = 0;
   let finishing = false;
+  let reached = false; // the stamp target has been met this run (its fanfare plays once)
 
   function enter(g) {
     game = g;
@@ -93,6 +94,7 @@ export function createShell({ onResult, onExit }) {
     ui.result.hidden = true;
     ui.pops.textContent = '';
     finishing = false;
+    reached = false;
     game.reset();
     counting = true;
     cd = 3;
@@ -134,6 +136,15 @@ export function createShell({ onResult, onExit }) {
     ui.score.textContent = fmtScore(Math.max(0, points)); // same floor as the final score
     ui.goal.textContent = `${c.progressLabel} ${Math.max(0, progress)}/${c.target}`;
     ui.goalCard.classList.toggle('done', progress >= c.target);
+    if (!reached && progress >= c.target && !counting && !finishing) {
+      reached = true;
+      sfx.clear();
+      ui.goalCard.classList.remove('reached');
+      void ui.goalCard.offsetWidth;
+      ui.goalCard.classList.add('reached');
+      const r = ui.goalCard.getBoundingClientRect();
+      pop('達成過關條件！', 'goal', { x: innerWidth / 2, y: Math.max(r.bottom + 60, innerHeight * 0.28) }); // below the HUD and any status pills
+    }
     if (time !== undefined) ui.time.textContent = time;
     if (frac !== null) ui.bar.style.transform = `scaleX(${Math.max(0, frac)})`;
   }

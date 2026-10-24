@@ -38,5 +38,11 @@ export const sfx = {
   note: (i) => tone([523, 659, 784, 988][i % 4], 0.28, { type: 'triangle', vol: 0.14 }),
   win: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.2, { delay: i * 0.11 })),
   blow: () => [0, 0.09].forEach((d) => tone(420, 0.4, { type: 'triangle', vol: 0.05, slide: 0.35, delay: d })),
+  // the moment a level's stamp target is met: a quick rising fanfare, a held chord and a sparkle
+  clear: () => {
+    [659, 784, 1047].forEach((f, i) => tone(f, 0.12, { type: 'square', vol: 0.045, delay: i * 0.07 }));
+    [1047, 1319, 1568].forEach((f) => tone(f, 0.55, { type: 'triangle', vol: 0.07, delay: 0.24 }));
+    [2093, 2637, 3136].forEach((f, i) => tone(f, 0.14, { vol: 0.035, delay: 0.38 + i * 0.07 }));
+  },
   pop: () => tone(520, 0.08, { type: 'triangle', vol: 0.1, slide: 1.6 }),
 };

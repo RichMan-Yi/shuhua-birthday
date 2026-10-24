@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { mat, flat, mesh, makeBasket, makePeach, makeBee, makePeachTree, makeCloud } from '../models.js';
+import { mat, flat, mesh, makePeach, makeBee, makePeachTree, makeCloud } from '../models.js';
 import { makeWolf } from '../wolf.js';
 import { sfx } from '../audio.js';
 import { clamp, steering, lightRig } from './common.js';
@@ -7,6 +7,33 @@ import { tally } from './shell.js';
 
 const DURATION = 30;
 const SKY = '#BFE2EA';
+
+// Oval wicker basket (rx wide, rz deep, h tall, centred on its middle) with a handle loop at each end.
+function makeHandBasket({ rx, rz, h }) {
+  const g = new THREE.Group();
+  const wicker = mat('#B9834F', { side: THREE.DoubleSide });
+  const dark = mat('#9A6A3C');
+  const oval = (o) => o.scale.set(rx / 0.3, 1, rz / 0.3);
+  const wall = mesh(new THREE.CylinderGeometry(0.3, 0.25, h, 20, 1, true), wicker);
+  oval(wall);
+  g.add(wall);
+  const floor = mesh(new THREE.CircleGeometry(0.25, 20).rotateX(-Math.PI / 2), wicker, 0, -h / 2, 0);
+  oval(floor);
+  g.add(floor);
+  // woven bands and a rolled rim
+  for (const [y, r, t] of [[h / 2, 0.3, 0.03], [0, 0.275, 0.014], [-h / 4, 0.263, 0.012]]) {
+    const band = mesh(new THREE.TorusGeometry(r, t, 6, 28), dark, 0, y, 0);
+    band.rotation.x = Math.PI / 2;
+    band.scale.set(rx / 0.3, rz / 0.3, 1);
+    g.add(band);
+  }
+  for (const s of [-1, 1]) {
+    const loop = mesh(new THREE.TorusGeometry(0.05, 0.014, 6, 12, Math.PI), dark, s * (rx - 0.005), h / 2 - 0.005, 0);
+    loop.rotation.set(0, Math.PI / 2, 0);
+    g.add(loop);
+  }
+  return g;
+}
 
 // 拉拉山・接水蜜桃: steer the wolf and catch falling peaches in the basket.
 export function createPeachGame(shell) {
@@ -65,10 +92,13 @@ export function createPeachGame(shell) {
   }
 
   const player = makeWolf();
-  const basket = makeBasket();
-  basket.position.set(0, 0.33, 0.33);
+  // a wide, shallow oval basket held against the belly: its back clears the body's front
+  // (z ≈ 0.22) and its two ends reach the paws, which grip the side handles; legs show below
+  const BASKET = { y: 0.35, z: 0.335, rx: 0.27, rz: 0.105, h: 0.2 };
+  const basket = makeHandBasket(BASKET);
+  basket.position.set(0, BASKET.y, BASKET.z);
   player.add(basket);
-  player.userData.arms.forEach((p) => (p.rotation.x = -1.0));
+  player.userData.arms.forEach((p, i) => p.rotation.set(-1.45, 0, (i ? 1 : -1) * 0.4));
   scene.add(player);
   const shadow = new THREE.Mesh(
     new THREE.CircleGeometry(0.5, 20),
@@ -82,8 +112,8 @@ export function createPeachGame(shell) {
   let k = 1; // object scale, grows on tall screens
   let W = 3; // half width the player can move
   let spawnY = 8;
-  const basketY = () => (0.33 + 0.15) * 1.35 * k;
-  const itemZ = () => 0.33 * 1.35 * k;
+  const basketY = () => (BASKET.y + BASKET.h / 2) * 1.35 * k; // the rim
+  const itemZ = () => BASKET.z * 1.35 * k;
 
   function resize(w, h) {
     camera.aspect = w / h;
