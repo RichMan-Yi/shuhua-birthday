@@ -227,9 +227,11 @@
     inset: 0;
     display: grid;
     grid-template-columns: minmax(0, 380px);
-    place-content: center;
+    justify-content: center;
     background: var(--scrim);
-    padding-block: 16px;
+    padding-block: calc(env(safe-area-inset-top, 0px) + 12px) calc(env(safe-area-inset-bottom, 0px) + 12px);
+    overflow-y: auto; /* a dialog taller than the screen scrolls instead of being cut off */
+    overscroll-behavior: contain;
     padding-left: max(16px, env(safe-area-inset-left, 0px));
     padding-right: max(16px, env(safe-area-inset-right, 0px));
     pointer-events: auto;
@@ -238,6 +240,7 @@
   .dialog {
     width: 100%;
     max-width: 380px;
+    margin-block: auto; /* centred when it fits, starts at the top when it does not */
     padding: 22px 22px 20px;
     display: grid;
     gap: 12px;
@@ -269,6 +272,23 @@
   }
   .seal b { font-weight: 400; font-size: 22px; line-height: 1.1; }
   .seal span { font-size: 10px; letter-spacing: 0.15em; }
+  /* level result: compact so the stamp, score, breakdown and buttons fit a phone screen */
+  #gResult .dialog { padding: 16px 18px 14px; gap: 8px; }
+  #gResult h2 { font-size: 22px; }
+  #gResult .big { font-size: 46px; }
+  #gResult .big small { font-size: 16px; }
+  #gResult .seal { width: 72px; height: 72px; }
+  #gResult .seal b { font-size: 17px; }
+  #gResult .seal span { font-size: 9px; }
+  #gResult .lines { font-size: 13px; gap: 0; }
+  #gResult .lines li { padding: 2px 0; }
+  #gResult p { font-size: 13px; line-height: 1.5; }
+  #gResult .btn { font-size: 15px; padding: 9px 18px; }
+  @media (max-height: 640px) {
+    #gResult .seal { width: 56px; height: 56px; }
+    #gResult .seal span { display: none; }
+    #gResult .big { font-size: 38px; }
+  }
   .seal.fresh { animation: stamp 0.45s cubic-bezier(.2, 1.6, .4, 1) 0.15s both; }
 
 
