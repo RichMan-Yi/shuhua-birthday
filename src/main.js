@@ -82,10 +82,18 @@ function renderStamps() {
   $('totalBtn').textContent = `總分 ${fmtScore(totalScore())}`;
 }
 
+// tell the map how much of the screen the cards cover, so it frames the open space between them
+function syncInsets() {
+  const top = document.querySelector('#mapUI .top').getBoundingClientRect().bottom;
+  const low = sheet.root.hidden ? $('hint') : sheet.root;
+  map.setInsets(top, low.hidden ? 0 : window.innerHeight - low.getBoundingClientRect().top);
+}
+
 function showSheet(spot) {
   current = spot;
   $('hint').hidden = !!spot;
   sheet.root.hidden = !spot;
+  requestAnimationFrame(syncInsets);
   if (!spot) return;
   const got = !!save.stamps[spot.id];
   sheet.area.textContent = spot.area;
@@ -126,6 +134,7 @@ function syncSky() {
 }
 
 $('sheetClose').addEventListener('click', () => map.deselect());
+sheet.root.addEventListener('animationend', syncInsets); // measure again once the card has risen into place
 
 // ---------- settlement: total score, wish, reset ----------
 function openSummary() {
@@ -360,6 +369,7 @@ function resize() {
   const h = window.innerHeight;
   renderer.setSize(w, h, false);
   map.resize(w, h);
+  syncInsets();
   Object.values(games).forEach((g) => g.resize(w, h));
   ending?.resize(w, h);
 }

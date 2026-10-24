@@ -37,6 +37,7 @@ export function createActivities({ wolf, spots, groups }) {
       const height = (p) => Math.max(0, H * (1 - Math.hypot(p.x - peak.x, p.z - peak.z) / R));
       return {
         at: stand('lalashan'),
+        focusY: 1.5, // the show climbs to the peak
         enter(t) {
           t0 = t;
           from = wolf.position.clone().setY(0);

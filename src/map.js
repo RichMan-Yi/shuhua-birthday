@@ -455,7 +455,11 @@ export function createMap({ canvas, spots, isStamped, onSelect, tour = false, ti
   // camera framing
   let active = true;
   let selected = null;
-  const fly = { on: false, target: new THREE.Vector3(), dist: 0 };
+  // follow: track the walking wolf; polar: also tilt toward this angle (null keeps the player's tilt)
+  const fly = { on: false, target: new THREE.Vector3(), dist: 0, polar: null, follow: false };
+  const sph = new THREE.Spherical();
+  // screen space taken by the cards above and below, so framed shots land in the open middle
+  const view = { w: 1, h: 1, shift: 0, want: 0 };
   controls.addEventListener('start', () => (fly.on = false));
 
   function viewFor(aspect) {
@@ -483,10 +487,20 @@ export function createMap({ canvas, spots, isStamped, onSelect, tour = false, ti
     controls.update();
   }
 
-  function flyTo(point, dist) {
+  function flyTo(point, dist, polar = null, follow = false) {
     fly.target.copy(point);
     fly.dist = dist;
+    fly.polar = polar;
+    fly.follow = follow;
     fly.on = true;
+  }
+
+  // once the wolf arrives: come in low and close on the landmark and the wolf's show
+  function frameShow(s) {
+    const act = activities[s.id];
+    const show = act?.at ?? new THREE.Vector3(s.pos[0], 0, s.pos[1]);
+    const portrait = camera.aspect < 1;
+    flyTo(new THREE.Vector3((s.pos[0] + show.x) / 2, act?.focusY ?? 0.6, (s.pos[1] + show.z) / 2), portrait ? 10.5 : 8, portrait ? 0.98 : 1.02);
   }
 
   function select(id) {
@@ -496,9 +510,8 @@ export function createMap({ canvas, spots, isStamped, onSelect, tour = false, ti
     ring.visible = true;
     ring.position.set(s.pos[0], 0.05, s.pos[1]);
     ring.scale.setScalar(s.ring);
-    // frame both the landmark and where the wolf will perform
-    const show = activities[s.id]?.at ?? new THREE.Vector3(s.pos[0], 0, s.pos[1]);
-    flyTo(new THREE.Vector3((s.pos[0] + show.x) / 2, 0.6, (s.pos[1] + show.z) / 2), camera.aspect < 1 ? 12 : 9);
+    // follow the wolf on its way there, then frame the show (frameShow, on arrival)
+    flyTo(shuhua.position.clone().setY(0.6), camera.aspect < 1 ? 13 : 10, 0.85, true);
     walkTo(activities[s.id]?.at.clone() ?? new THREE.Vector3(s.stand[0], 0, s.stand[1]), 3.2, s.id);
     onSelect(s);
   }
@@ -506,7 +519,7 @@ export function createMap({ canvas, spots, isStamped, onSelect, tour = false, ti
   function deselect() {
     selected = null;
     ring.visible = false;
-    flyTo(CENTER, viewFor(camera.aspect).dist);
+    flyTo(CENTER, viewFor(camera.aspect).dist, viewFor(camera.aspect).polar);
     onSelect(null);
   }
 
@@ -544,12 +557,19 @@ export function createMap({ canvas, spots, isStamped, onSelect, tour = false, ti
       walkTo(activities[s.id]?.at.clone() ?? new THREE.Vector3(s.stand[0], 0, s.stand[1]), 2.4, s.id);
     }
     if (fly.on) {
-      const k = 1 - Math.exp(-dt * 4);
+      if (fly.follow) fly.target.copy(shuhua.position).setY(0.6);
+      const k = 1 - Math.exp(-dt * (fly.follow ? 3 : 2.2));
       controls.target.lerp(fly.target, k);
-      const offset = camera.position.clone().sub(controls.target);
-      const len = THREE.MathUtils.lerp(offset.length(), fly.dist, k);
-      camera.position.copy(controls.target).add(offset.setLength(len));
-      if (controls.target.distanceTo(fly.target) < 0.02 && Math.abs(len - fly.dist) < 0.05) fly.on = false;
+      sph.setFromVector3(camera.position.clone().sub(controls.target));
+      sph.radius = THREE.MathUtils.lerp(sph.radius, fly.dist, k);
+      if (fly.polar !== null) sph.phi = THREE.MathUtils.lerp(sph.phi, fly.polar, k);
+      camera.position.copy(controls.target).add(new THREE.Vector3().setFromSpherical(sph));
+      const settled = controls.target.distanceTo(fly.target) < 0.02 && Math.abs(sph.radius - fly.dist) < 0.05 && (fly.polar === null || Math.abs(sph.phi - fly.polar) < 0.005);
+      if (settled && !fly.follow) fly.on = false;
+    }
+    if (Math.abs(view.want - view.shift) > 0.5) {
+      view.shift += (view.want - view.shift) * Math.min(1, dt * 5);
+      camera.setViewOffset(view.w, view.h, 0, view.shift, view.w, view.h);
     }
     controls.update();
 
@@ -631,6 +651,7 @@ export function createMap({ canvas, spots, isStamped, onSelect, tour = false, ti
           if (walk.spot && activities[walk.spot]) {
             activity = activities[walk.spot];
             activity.enter(time);
+            if (selected?.id === walk.spot && fly.follow) frameShow(selected);
           }
         }
       }
@@ -653,8 +674,14 @@ export function createMap({ canvas, spots, isStamped, onSelect, tour = false, ti
     deselect,
     resize(w, h) {
       camera.aspect = w / h;
-      camera.updateProjectionMatrix();
+      view.w = w;
+      view.h = h;
+      camera.setViewOffset(w, h, 0, view.shift, w, h);
       if (!selected) resetView();
+    },
+    // pixels covered by UI at the top and bottom; the view slides so its centre sits between them
+    setInsets(top, bottom) {
+      view.want = (bottom - top) / 2;
     },
     setActive(on) {
       active = on;
