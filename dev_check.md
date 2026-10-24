@@ -2,6 +2,21 @@
 
 所有可以直接點開的頁面和文件。
 
+## 線上版（GitHub Pages）
+
+推送到 `main` 後約 1 分鐘自動更新，手機在任何網路下都能開，畫面上沒有多餘的標題列。
+
+| 頁面 | 網址 |
+|---|---|
+| 遊戲 | https://richman-yi.github.io/shuhua-birthday/ |
+| 開發者模式 | https://richman-yi.github.io/shuhua-birthday/#dev |
+| 生日派對 | https://richman-yi.github.io/shuhua-birthday/#party |
+| 祝福牆 | https://richman-yi.github.io/shuhua-birthday/wall.html |
+| 倉庫 | https://github.com/RichMan-Yi/shuhua-birthday |
+| 部署紀錄 | https://github.com/RichMan-Yi/shuhua-birthday/actions |
+
+線上版只有遊戲和祝福牆；模型檢視頁（viewer.html）需要本機的參考圖，只能用本機伺服器開。
+
 ## 先啟動本機伺服器
 
 在專案資料夾執行：

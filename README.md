@@ -51,3 +51,10 @@ python3 tools/serve.py 8000
 3. Claude 把數值寫進 `src/wolf.js` 的 `WOLF_PARAMS`，成為新的預設值，遊戲也會跟著用新版本
 
 滑桿的種類和範圍都定義在 `src/wolf.js` 的 `WOLF_PARAMS`。
+
+## 部署
+
+- 網址：https://richman-yi.github.io/shuhua-birthday/
+- 推送到 `main` 就會由 [.github/workflows/pages.yml](.github/workflows/pages.yml) 自動部署到 GitHub Pages。
+- 網站只放遊戲會載入的檔案：`index.html`、`wall.html`、`src/`（不含 `src/viewer.js`）。規格文件、工具和模型檢視頁只在倉庫裡。
+- `ref/` 的參考圖不進倉庫（見 `.gitignore`），只留在本機。
