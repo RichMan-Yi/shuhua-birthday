@@ -208,6 +208,25 @@ function openWish() {
   $('wishUI').hidden = false;
   syncWishCounts();
 }
+// the on-screen keyboard covers the lower half of the screen (and iOS pans the page), so while it is
+// up the wish dialog is fitted to the visible part above it, and the focused field kept in view
+const wishOverlay = document.querySelector('#wishUI .overlay');
+function fitWish() {
+  const vv = window.visualViewport;
+  if (!vv || $('wishUI').hidden) return;
+  const keyboard = window.innerHeight - vv.height > 120;
+  wishOverlay.classList.toggle('keyboard', keyboard);
+  wishOverlay.style.height = keyboard ? vv.height + 'px' : '';
+  wishOverlay.style.transform = keyboard ? `translateY(${vv.offsetTop}px)` : '';
+  if (keyboard) document.activeElement?.closest('.field')?.scrollIntoView({ block: 'nearest' });
+}
+window.visualViewport?.addEventListener('resize', fitWish);
+window.visualViewport?.addEventListener('scroll', fitWish);
+for (const id of ['wishName', 'wishText']) {
+  $(id).addEventListener('focus', () => setTimeout(fitWish, 300)); // after the keyboard has slid up
+  $(id).addEventListener('blur', () => setTimeout(fitWish, 300));
+}
+
 function syncWishCounts() {
   $('wishNameCount').textContent = `${$('wishName').value.length}/10`;
   $('wishTextCount').textContent = `${graphemes($('wishText').value)}/30`;

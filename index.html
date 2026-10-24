@@ -418,6 +418,14 @@
   .field small { font-weight: 400; color: var(--muted); font-variant-numeric: tabular-nums; }
   .field input, .field textarea { font: 16px var(--font-body); color: var(--ink); background: #FFFFFF; border: 1.5px solid var(--line); border-radius: 12px; padding: 10px 12px; resize: none; -webkit-user-select: text; user-select: text; }
   .field input:focus, .field textarea:focus { outline: none; border-color: var(--peach); }
+  /* keyboard up: tighter dialog, pinned to the top of the visible area */
+  .overlay.keyboard { padding-block: 8px; }
+  .overlay.keyboard .dialog { margin-block: 0 auto; padding: 12px 16px; gap: 6px; }
+  .overlay.keyboard .wish-form { gap: 6px; }
+  .overlay.keyboard .wish-form > .eyebrow, .overlay.keyboard .wish-score { display: none; }
+  .overlay.keyboard .wish-form h2 { font-size: 20px; }
+  .overlay.keyboard .btn { font-size: 15px; padding: 8px 18px; }
+  .field input, .field textarea { width: 100%; min-width: 0; box-sizing: border-box; }
   .wish-error { margin: 0; min-height: 1.2em; font-size: 13px; color: var(--peach-deep); }
   #wishDone { text-align: center; }
   .end-total b { font-family: var(--font-display); font-weight: 400; font-size: 24px; color: var(--ink); }
