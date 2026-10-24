@@ -79,7 +79,8 @@ let current = null;
 function renderStamps() {
   const got = SPOTS.filter((s) => save.stamps[s.id]).length;
   $('stampRow').innerHTML = SPOTS.map(
-    (s) => `<li class="stamp${save.stamps[s.id] ? ' got' : ''}" title="${s.name}"><i>${s.stamp}</i></li>`
+    (s) =>
+      `<li class="stamp${save.stamps[s.id] ? ' got' : ''}${current?.id === s.id ? ' current' : ''}"><button type="button" data-spot="${s.id}" aria-label="${s.name}${save.stamps[s.id] ? '（已蓋章）' : ''}"><i>${s.stamp}</i></button></li>`
   ).join('');
   $('stampCount').textContent = `${got} / ${SPOTS.length}`;
   $('partyBtn').hidden = !allStamped();
@@ -95,6 +96,7 @@ function syncInsets() {
 
 function showSheet(spot) {
   current = spot;
+  for (const b of $('stampRow').querySelectorAll('button')) b.parentElement.classList.toggle('current', b.dataset.spot === spot?.id);
   $('hint').hidden = !!spot;
   if (spot) $('soundTip').hidden = true; // the sound reminder is only for the first look at the map
   sheet.root.hidden = !spot;
@@ -139,6 +141,11 @@ function syncSky() {
 }
 
 $('sheetClose').addEventListener('click', () => map.deselect());
+// each stamp in the top card doubles as a shortcut to its landmark
+$('stampRow').addEventListener('click', (e) => {
+  const id = e.target.closest('button[data-spot]')?.dataset.spot;
+  if (id) map.select(id);
+});
 sheet.root.addEventListener('animationend', syncInsets); // measure again once the card has risen into place
 
 // ---------- settlement: total score, wish, reset ----------
