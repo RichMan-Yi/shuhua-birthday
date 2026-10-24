@@ -1,5 +1,6 @@
-// Wish wall data. Until there is a shared leaderboard, this is a simulated crowd of players
-// (seeded, so it looks the same on every load) plus the wish this browser sent from the game.
+// Wish island data: the wish this browser sent from the game, plus, in developer mode only, a
+// simulated crowd of players (seeded, so it looks the same on every load). Real players' wishes
+// will come from the shared leaderboard once there is one.
 export const WALL_KEY = 'shuhua-wall-mine';
 const CROWD = 1268;
 
@@ -54,10 +55,10 @@ const fakeEntry = (at) => ({ name: makeName(), wish: [...pick(WISHES)].slice(0, 
 // ranked list; ties go to whoever sent first
 const byRank = (a, b) => b.score - a.score || a.at - b.at;
 
-export function createCrowd() {
+export function createCrowd({ simulate = false } = {}) {
   const now = Date.now();
   const people = [];
-  for (let i = 0; i < CROWD; i++) people.push(fakeEntry(now - rand() * 10 * 864e5));
+  if (simulate) for (let i = 0; i < CROWD; i++) people.push(fakeEntry(now - rand() * 10 * 864e5));
 
   let me = null;
   try {
@@ -76,6 +77,7 @@ export function createCrowd() {
 
   return {
     me,
+    simulated: simulate,
     get ranked() {
       return ranked;
     },
@@ -88,7 +90,7 @@ export function createCrowd() {
     // a simulated player sending a wish right now; now and then a big score shakes up the podium
     arrive() {
       const p = fakeEntry(Date.now());
-      if (Math.random() < 0.06) p.score = Math.round(ranked[2].score + 50 + Math.random() * 1500);
+      if (ranked.length > 2 && Math.random() < 0.06) p.score = Math.round(ranked[2].score + 50 + Math.random() * 1500);
       people.push(p);
       ranked = [...people].sort(byRank);
       reindex();

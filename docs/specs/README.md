@@ -33,4 +33,4 @@
 | [levels/night.md](levels/night.md) | 桃園觀光夜市・夜市限時點餐 |
 | [progression.md](progression.md) | 通關流程、關卡鎖定、存檔、送出祝福、重置 |
 | [ending.md](ending.md) | 集滿印章後的生日派對 |
-| [wish-wall.md](wish-wall.md) | 生日祝福牆 |
+| [wish-wall.md](wish-wall.md) | 生日祝福島 |

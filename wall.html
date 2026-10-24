@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>舒華生日祝福牆</title>
+<title>舒華生日祝福島</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <script>
   // a wide desktop window (mouse, not touch) plays inside a phone-shaped frame, so everyone gets the same view;
@@ -94,7 +94,7 @@
   .note.podium { padding-top: 1em; }
   .note.podium .wish { font-weight: 700; }
   .note .doodle { position: absolute; left: 50%; top: -2.4em; width: 3.4em; height: 2.6em; transform: translateX(-50%) rotate(-6deg); overflow: visible; }
-  .puff { position: absolute; left: 0; top: 0; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%; border: 3px dotted rgba(255, 236, 170, 0.95); pointer-events: none; animation: puff 0.7s ease-out forwards; }
+  .zoom-scrim { position: absolute; inset: 0; z-index: 20; background: rgba(16, 18, 40, 1); opacity: 0; pointer-events: none; }
 
   /* title note and controls */
   .title {
@@ -169,7 +169,7 @@
   .book h2 { margin: 0; font-family: var(--font-hand-zh); font-weight: 700; font-size: 26px; padding-left: 40px; }
   .book .close { border: 0; background: none; font-size: 28px; line-height: 1; color: var(--muted); cursor: pointer; padding: 4px 8px; }
   .book .me { margin: 0 0 0 40px; padding: 8px 12px; border: 2px dashed var(--peach); border-radius: 12px; background: #FFF4EF; font-family: var(--font-hand-zh); font-size: 18px; }
-  .book input { margin-left: 40px; width: calc(100% - 40px); border: 0; border-bottom: 2px solid var(--ink); background: transparent; padding: 6px 2px; font: 20px var(--font-hand-zh); color: var(--ink); }
+  .book input { margin-left: 40px; width: calc(100% - 40px); box-sizing: border-box; min-width: 0; border: 0; border-bottom: 2px solid var(--ink); background: transparent; padding: 6px 2px; font: 20px var(--font-hand-zh); color: var(--ink); }
   .book input:focus { outline: none; border-bottom-color: var(--peach); }
   .list { list-style: none; margin: 0; padding: 0 0 0 40px; display: grid; }
   .list li { display: grid; grid-template-columns: 3.4em minmax(0, 7.5em) minmax(0, 1fr) auto; gap: 8px; align-items: baseline; min-height: 32px; font-family: var(--font-hand-zh); font-size: 17px; }
@@ -182,16 +182,28 @@
   .pager { display: flex; justify-content: space-between; align-items: center; padding-left: 40px; font-family: "Caveat", cursive; font-size: 20px; }
   .hint { margin: 0 0 0 40px; font-family: var(--font-hand-zh); font-size: 16px; color: var(--muted); }
 
-  @keyframes puff { from { transform: scale(0.3); opacity: 1; } to { transform: scale(1.6); opacity: 0; } }
   @keyframes up { from { transform: translateY(30px); opacity: 0; } }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
   }
   @media (max-width: 600px) {
-    .title h1 { font-size: 22px; }
-    .note { max-width: 11em; }
-    .list li { grid-template-columns: 3em minmax(0, 1fr) auto; }
-    .list .w { display: none; }
+    /* phone: a compact title so the sky stays open for the notes rising through it */
+    .title { padding: 7px 12px 6px; top: calc(env(safe-area-inset-top, 0px) + 10px); }
+    .title small { display: none; }
+    .title h1 { font-size: 18px; }
+    .title p { font-size: 12px; }
+    .title .sim { margin-top: 3px; font-size: 10px; }
+    .note { max-width: 9.5em; padding: 0.5em 0.7em 0.45em; }
+    /* notebook: narrower margin, rank + name + score on one line, the wish on its own line below */
+    .book { overflow-x: hidden; }
+    .book::before { left: 26px; }
+    .book h2, .book .hint, .pager { padding-left: 24px; }
+    .book .me, .book .hint { margin-left: 24px; }
+    .book input { margin-left: 24px; width: calc(100% - 24px); }
+    .list { padding-left: 24px; }
+    .list li { grid-template-columns: 2.9em minmax(0, 1fr) auto; column-gap: 6px; row-gap: 0; padding: 3px 0; }
+    .list .w { display: block; grid-column: 2 / -1; font-size: 14px; line-height: 1.3; }
+    .pager .btn { padding: 8px 14px; font-size: 14px; }
   }
 </style>
 <script type="importmap">
@@ -211,8 +223,9 @@
 <header class="title">
   <small>1.6 舒華生日企劃</small>
   <h1>給舒華的生日祝福</h1>
-  <p><span id="count">0</span> 則祝福從桃園各地冒出來</p>
-  <span class="sim">模擬畫面・名單和祝福都是測試資料</span>
+  <p id="countLine"><span id="count">0</span> 則祝福從桃園各地冒出來</p>
+  <p id="empty" hidden>還沒有祝福，等你來寫第一則！</p>
+  <span id="sim" class="sim" hidden>開發模式・模擬畫面，名單和祝福都是測試資料</span>
 </header>
 
 <nav class="dock">

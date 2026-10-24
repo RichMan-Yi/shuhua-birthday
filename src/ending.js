@@ -233,17 +233,17 @@ export function createEnding({ canvas, onExit, onWish, submitted }) {
   }
 
   $('endBlow').addEventListener('click', blow);
-  $('endAgain').addEventListener('click', () => {
-    fwLeft = 8;
-    fwTimer = 0;
-  });
   $('endWish').addEventListener('click', onWish);
-  // after the wish is sent the card points to the wall instead
+  // after the wish is sent, 回到地圖 becomes the main button and leads to the wall (the night map)
   const refresh = () => {
     $('endWish').hidden = submitted();
-    $('endWall').hidden = !submitted();
+    $('endExit').classList.toggle('ghost', !submitted());
+    $('endExit').classList.toggle('small', !submitted());
+    const rows = $('endCard').querySelectorAll('.actions');
+    (submitted() ? rows[0] : rows[1]).append($('endExit')); // up front, where 送出生日祝福 was
   };
   $('endExit').addEventListener('click', () => {
+    if (submitted()) return location.assign('wall.html#me');
     active = false;
     $('endingUI').hidden = true;
     onExit();
@@ -373,8 +373,9 @@ export function createEnding({ canvas, onExit, onWish, submitted }) {
     p.tail.rotation.z = p.rest.tailZ + Math.sin(clock * (cheering ? 12 : 5)) * 0.35;
     p.head.rotation.z = Math.sin(clock * 1.6) * 0.08;
     if (cheering) {
-      p.arms[1].rotation.z = p.rest.arm + 1.5 + Math.sin(clock * 8) * 0.35;
-      p.arms[0].rotation.z = -p.rest.arm - 1.5 - Math.sin(clock * 8 + 1) * 0.35;
+      // paws pump in front of the chest: raised any higher, the short arms vanish behind the big head
+      const pump = Math.sin(clock * 9);
+      p.arms.forEach((a, i) => a.rotation.set(-1.25 - pump * 0.35, 0, (i ? 1 : -1) * p.rest.arm * 0.55));
       p.body.position.y = Math.abs(Math.sin(clock * 5)) * 0.15;
     }
 

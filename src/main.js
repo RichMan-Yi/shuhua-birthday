@@ -161,7 +161,7 @@ function openSummary() {
     ? `已經用「${save.submitted.name}」送出祝福了。想再挑戰的話，可以重置重新開始。`
     : left
       ? `還有 ${left} 關沒通關。五關都通關後，就能用總分送出生日祝福。`
-      : '五關都通關了！送出生日祝福，你的名字和總分會出現在祝福牆上。';
+      : '五關都通關了！送出生日祝福，你的名字和總分會出現在祝福島上。';
   $('sumWish').hidden = !allStamped() || !!save.submitted;
   $('sumWall').hidden = !save.submitted;
   $('sumReset').hidden = !save.submitted;
@@ -262,7 +262,6 @@ $('wishForm').addEventListener('submit', (e) => {
   ending?.refresh();
 });
 $('wishClose').addEventListener('click', () => ($('wishUI').hidden = true));
-$('wishDoneClose').addEventListener('click', () => ($('wishUI').hidden = true));
 
 // ---------- mini games ----------
 let mode = 'map'; // map | game | ending

@@ -11,11 +11,11 @@
 | 遊戲 | https://richman-yi.github.io/shuhua-birthday/ |
 | 開發者模式 | https://richman-yi.github.io/shuhua-birthday/#dev |
 | 生日派對 | https://richman-yi.github.io/shuhua-birthday/#party |
-| 祝福牆 | https://richman-yi.github.io/shuhua-birthday/wall.html |
+| 祝福島 | https://richman-yi.github.io/shuhua-birthday/wall.html |
 | 倉庫 | https://github.com/RichMan-Yi/shuhua-birthday |
 | 部署紀錄 | https://github.com/RichMan-Yi/shuhua-birthday/actions |
 
-線上版只有遊戲和祝福牆；模型檢視頁（viewer.html）需要本機的參考圖，只能用本機伺服器開。
+線上版只有遊戲和祝福島；模型檢視頁（viewer.html）需要本機的參考圖，只能用本機伺服器開。
 
 ## 先啟動本機伺服器
 
@@ -64,12 +64,16 @@ python3 tools/serve.py 8000
 - 直接開關卡的網址，**只對還沒過關的關卡有效**（開發者模式下不受限制）。
 - 開關卡網址之後如果畫面停在地圖，請重新整理一次（網址的 `#` 改變時，頁面不會自己重新載入）。
 
-## 祝福牆
+## 祝福島
 
 | 頁面 | 電腦 | 手機 |
 |---|---|---|
-| 祝福牆（夜晚星空＋手寫紙條） | http://localhost:8000/wall.html | http://172.20.10.4:8000/wall.html |
-| 祝福牆，先冒出自己的祝福 | http://localhost:8000/wall.html#me | http://172.20.10.4:8000/wall.html#me |
+| 祝福島（夜晚星空＋手寫紙條） | http://localhost:8000/wall.html | http://172.20.10.4:8000/wall.html |
+| 祝福島，先冒出自己的祝福 | http://localhost:8000/wall.html#me | http://172.20.10.4:8000/wall.html#me |
+| 祝福島，開啟開發模式（看 1,268 位模擬玩家） | http://localhost:8000/wall.html#dev | http://172.20.10.4:8000/wall.html#dev |
+| 祝福島，關閉開發模式（只看真實的祝福） | http://localhost:8000/wall.html#nodev | http://172.20.10.4:8000/wall.html#nodev |
+
+開發模式和遊戲共用同一個開關：在遊戲開 `#dev`，祝福島也會變成開發模式，反之亦然。
 
 自己的祝福要先在遊戲裡五關通關、送出祝福後才會出現。
 
@@ -91,7 +95,7 @@ python3 tools/serve.py 8000
 
 - 遊戲：https://claude.ai/artifact/QYJXye1pnNLhmd1HVUZThZ
 
-這是私人連結，要登入你的 claude.ai 帳號才能開，手機也可以。線上版只有遊戲本體和祝福牆；模型檢視頁沒有放上去。
+這是私人連結，要登入你的 claude.ai 帳號才能開，手機也可以。線上版只有遊戲本體和祝福島；模型檢視頁沒有放上去。
 
 ## 文件
 
@@ -112,7 +116,7 @@ python3 tools/serve.py 8000
 | [docs/specs/levels/night.md](docs/specs/levels/night.md) | 桃園觀光夜市・夜市限時點餐 |
 | [docs/specs/progression.md](docs/specs/progression.md) | 通關流程、存檔、送出祝福、重置 |
 | [docs/specs/ending.md](docs/specs/ending.md) | 生日派對 |
-| [docs/specs/wish-wall.md](docs/specs/wish-wall.md) | 祝福牆 |
+| [docs/specs/wish-wall.md](docs/specs/wish-wall.md) | 祝福島 |
 
 ## 參考圖
 

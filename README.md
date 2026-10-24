@@ -1,6 +1,6 @@
 # 觀光大使的生日小旅行
 
-1/6 舒華生日企劃：3D 桃園地圖，五個景點各有一個小遊戲。五關都過關後送出生日祝福，祝福會出現在祝福牆上。
+1/6 舒華生日企劃：3D 桃園地圖，五個景點各有一個小遊戲。五關都過關後送出生日祝福，祝福會出現在祝福島上。
 
 所有可以點開的頁面整理在 [dev_check.md](dev_check.md)。完整的遊戲流程與規則見 [GAME_FLOW.md](GAME_FLOW.md)，各系統的規格見 [docs/specs/](docs/specs/README.md)。
 
@@ -14,14 +14,14 @@ python3 tools/serve.py 8000
 - 手機（和 Mac 同一個 Wi‑Fi）：開 `http://<Mac 的 IP>:8000`，IP 用 `ipconfig getifaddr en0` 查
 - 直接進某一關：網址後面加 `#game-daxi`、`#game-lalashan`、`#game-shimen`、`#game-xpark`、`#game-night`
 - 直接看生日派對：網址後面加 `#party`
-- 祝福牆：開 http://localhost:8000/wall.html（目前是模擬資料）
+- 祝福島：開 http://localhost:8000/wall.html（目前是模擬資料）
 
 ## 結構
 
 - `src/map.js` 桃園地圖、景點模型、鏡頭
-- `src/castle.js` 地圖中央的 Neverland 城堡（祝福牆才現身）與偽裝用的山丘
+- `src/castle.js` 地圖中央的 Neverland 城堡（祝福島才現身）與偽裝用的山丘
 - `src/daylight.js` 地圖的天色 7 階段
-- `src/fireworks.js` 煙火（生日派對、祝福牆共用）
+- `src/fireworks.js` 煙火（生日派對、祝福島共用）
 - `src/spots.js` 景點資料（名稱、介紹、位置）
 - `src/wolf.js` 小狼角色和所有可調參數
 - `src/models.js` 水蜜桃、蜜蜂、樹等模型
@@ -34,7 +34,7 @@ python3 tools/serve.py 8000
 - `src/games/night.js` 桃園觀光夜市・夜市限時點餐
 - `src/ending.js` 集滿印章後的生日派對
 - `src/audio.js` 音效
-- `wall.html`、`src/wall.js`、`src/wall-data.js` 祝福牆（3D 地圖＋手寫紙條，模擬 1,268 位玩家）
+- `wall.html`、`src/wall.js`、`src/wall-data.js` 祝福島（3D 地圖＋手寫紙條，模擬 1,268 位玩家）
 
 ## 模型檢視
 

@@ -9,14 +9,28 @@ document.addEventListener('gesturestart', (e) => e.preventDefault());
 document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
 import { NIGHT } from './daylight.js';
 
-// Wish wall: the game's island, with handwritten notes popping out of it. Higher scores make
-// bigger notes that stay longer and show up more often; the top three hover over landmarks.
+// Wish island: the game's island at night, with handwritten notes rising from just above the bottom
+// buttons, past the island and up through the night sky like let-go balloons. Higher scores make
+// bigger notes that show up more often; the top three hover over landmarks.
 const $ = (id) => document.getElementById(id);
 const fmt = (n) => Math.round(n).toLocaleString('en-US');
 const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const clamp = THREE.MathUtils.clamp;
 
-const crowd = createCrowd();
+// the simulated crowd is for developer mode only (#dev, shared with the game); players see real wishes
+const DEV_KEY = 'shuhua-dev';
+try {
+  if (location.hash === '#dev') localStorage.setItem(DEV_KEY, '1');
+  if (location.hash === '#nodev') localStorage.removeItem(DEV_KEY);
+} catch (e) {}
+const dev = (() => {
+  try {
+    return localStorage.getItem(DEV_KEY) === '1';
+  } catch (e) {
+    return false;
+  }
+})();
+const crowd = createCrowd({ simulate: dev });
 const canvas = $('stage');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -39,7 +53,7 @@ setTimeout(() => {
   map.revealCastle(3.5, () => {
     // clear the stage: notes that were floating in front of the castle bow out quickly
     const box = castleRect();
-    for (const n of live) if (!n.podium && box && overlaps(boxAt(n.sx, n.sy, n.w, n.h), box, 0)) n.life = Math.min(n.life, n.age + 0.8);
+    for (const n of live) if (!n.podium && box && overlaps(boxAt(n.sx, n.sy, n.w, n.h), box, 0)) n.out ??= 0.8;
     const c = map.castleAt;
     for (let i = 0; i < 6; i++) {
       const a = (i / 6) * Math.PI * 2;
@@ -62,7 +76,9 @@ const notesEl = $('notes');
 const strings = $('strings');
 const live = [];
 const isPhone = () => innerWidth < 600;
-const maxNotes = () => (isPhone() ? 5 : 8);
+const maxNotes = () => (isPhone() ? 14 : 18);
+// every floating note rises at the same speed, so notes that start clear of each other stay clear
+const RISE = () => (isPhone() ? 26 : 32); // px per second
 const rnd = (a, b) => a + Math.random() * (b - a);
 const any = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const latinOnly = (s) => /^[\x00-\x7F]*$/.test(s);
@@ -72,9 +88,10 @@ function makeNote(p, { podium = 0, fresh = false } = {}) {
   const top = crowd.rankOf(p) <= 10;
   el.className = `note${top ? ' top10' : ''}${p.mine ? ' mine' : ''}${podium ? ' podium' : ''}`;
   const standing = crowd.standing(p);
-  const base = isPhone() ? 12 : 13.5;
-  const size = (base + (isPhone() ? 5 : 7) * standing ** 2.2) * (podium && !isPhone() ? 1.15 : 1) * (p.mine || fresh ? 1.1 : 1);
+  const base = isPhone() ? 10.5 : 13;
+  const size = (base + (isPhone() ? 4 : 6) * standing ** 2.2) * (podium && !isPhone() ? 1.15 : 1) * (p.mine || fresh ? 1.1 : 1);
   el.style.setProperty('--size', `${size.toFixed(1)}px`);
+  el.dataset.size = size;
   el.style.setProperty('--paper-c', podium === 1 ? '#FFF3C4' : any(PAPERS));
   el.style.setProperty('--ink-c', any(INKS));
   el.style.setProperty('--tape-c', top ? 'rgba(217, 160, 33, 0.55)' : any(TAPES));
@@ -118,70 +135,88 @@ function castleRect() {
 const overlaps = (a, b, pad = 10) => a.left < b.right + pad && a.right > b.left - pad && a.top < b.bottom + pad && a.bottom > b.top - pad;
 const boxAt = (x, y, w, h) => ({ left: x - w / 2, right: x + w / 2, top: y - h, bottom: y });
 
-// A patch of land whose note (w × h once it has risen) won't cover another note or the UI.
-function freeGround(w, h) {
-  const taken = live.map((n) => boxAt(n.sx, n.sy, n.w, n.h)).concat(blockers(), [castleRect()].filter(Boolean));
-  for (let i = 0; i < 24; i++) {
-    const g = map.landPoint();
-    const s = toScreen(g.clone().setY(g.y + 1.25));
-    if (s.behind || s.x < w / 2 + 8 || s.x > innerWidth - w / 2 - 8 || s.y < h + 12) continue;
-    const box = boxAt(s.x, s.y, w, h);
-    if (!taken.some((t) => overlaps(box, t))) return g;
+// the highest a floating note may rise: just under the title note
+const ceiling = () => document.querySelector('.title').getBoundingClientRect().bottom + 8;
+
+// where floating notes start: their bottom edge just above the buttons
+const floor = () => document.querySelector('.dock .btn').getBoundingClientRect().top - 12;
+
+// A spot along the bottom where a w × h note won't cover another note. Floating notes all rise
+// together, so a note that starts clear stays clear all the way up.
+function freeStart(w, h) {
+  // the castle and the podium are not off limits: notes rising past them just step back (see updateNotes)
+  const taken = live.filter((n) => !n.podium).map((n) => boxAt(n.sx, n.sy, n.w, n.h));
+  const y = floor();
+  for (let i = 0; i < 16; i++) {
+    const x = rnd(w / 2 + 16, innerWidth - w / 2 - 16);
+    if (!taken.some((t) => overlaps(boxAt(x, y, w, h), t, 8))) return { x, y };
   }
   return null;
 }
 
 function spawn(p, { fresh = false, hold = 0, force = false } = {}) {
+  if (!p || crowd.rankOf(p) <= 3) return false; // the top three are always up over their landmarks
   if (live.some((n) => n.entry === p && !n.podium)) return false;
   const { el, line } = makeNote(p, { fresh });
+  line.remove(); // floating notes aren't tied to the island
   const w = el.offsetWidth;
   const h = el.offsetHeight;
-  let ground = freeGround(w, h);
-  if (!ground) {
+  let start = freeStart(w, h);
+  if (!start) {
     if (!force) {
       el.remove();
-      line.remove();
       return false; // no room right now; try again shortly
     }
-    ground = map.landPoint();
+    start = { x: rnd(w / 2 + 16, innerWidth - w / 2 - 16), y: floor() };
   }
-  const puff = document.createElement('i');
-  puff.className = 'puff';
-  notesEl.appendChild(puff);
-  setTimeout(() => puff.remove(), 800);
-  const standing = crowd.standing(p);
   live.push({
     entry: p,
     el,
-    line,
-    puff,
-    ground,
-    anchor: ground.clone(),
+    startX: start.x,
+    startY: start.y,
     age: 0,
-    life: 6 + 5 * standing + (fresh || p.mine ? 3 : 0) + hold,
+    hold, // seconds a looked-up note waits at the top before leaving
     rot: rnd(-7, 7),
     w,
     h,
     sx: -9999,
     sy: -9999,
   });
-  el.addEventListener('click', () => focusNote(p));
+  el.addEventListener('click', () => toggleZoom(live.find((x) => x.el === el)));
   return true;
 }
 
 function retire(n) {
   n.el.remove();
-  n.line.remove();
+  n.line?.remove();
   live.splice(live.indexOf(n), 1);
 }
 
+// bring a note up (spawning it if it isn't showing) and zoom it to the middle of the screen
 function focusNote(p) {
-  const n = live.find((x) => x.entry === p);
-  if (!n) return spawn(p, { hold: 6, force: true });
-  n.life = Math.max(n.life, n.age + 6);
-  n.focus = 1;
-  notesEl.appendChild(n.el);
+  let n = live.find((x) => x.entry === p);
+  if (!n) {
+    spawn(p, { hold: 6, force: true });
+    n = live.find((x) => x.entry === p && !x.podium);
+  }
+  if (!n) return;
+  n.hold = Math.max(n.hold || 0, 6);
+  n.out = undefined;
+  if (zoomed !== n) toggleZoom(n);
 }
+
+// tap a note: it grows to the middle of the screen, in front of everything; tap again to put it back
+let zoomed = null;
+const scrim = document.createElement('div');
+scrim.className = 'zoom-scrim';
+notesEl.appendChild(scrim);
+scrim.addEventListener('click', () => (zoomed = null));
+function toggleZoom(n) {
+  if (!n) return;
+  zoomed = zoomed === n ? null : n;
+  if (zoomed) notesEl.appendChild(n.el); // on top of the other notes
+}
+const smooth = (t) => t * t * (3 - 2 * t);
 
 // the top three stay up, each over its own landmark
 function renderPodium() {
@@ -191,8 +226,8 @@ function renderPodium() {
     const id = PODIUM_SPOTS[i];
     const anchor = map.above(id, i === 0 ? 0.9 : 0.6);
     const s = SPOTS.find((x) => x.id === id);
-    live.push({ entry: p, el, line, podium: i + 1, ground: new THREE.Vector3(s.pos[0], s.labelY, s.pos[1]), anchor, base: anchor.y, age: 0, life: Infinity, rot: [-2, 3, -3][i], w: el.offsetWidth, h: el.offsetHeight, sx: -9999, sy: -9999 });
-    el.addEventListener('click', () => focusNote(p));
+    live.push({ entry: p, el, line, podium: i + 1, ground: new THREE.Vector3(s.pos[0], s.labelY, s.pos[1]), anchor, base: anchor.y, age: 0, rot: [-2, 3, -3][i], w: el.offsetWidth, h: el.offsetHeight, sx: -9999, sy: -9999 });
+    el.addEventListener('click', () => toggleZoom(live.find((x) => x.el === el)));
   });
 }
 
@@ -200,6 +235,7 @@ function renderPodium() {
 const recent = [];
 function nextEntry() {
   const list = crowd.ranked;
+  if (list.length <= 3) return null; // everyone is already up on the podium
   for (let i = 0; i < 400; i++) {
     const p = list[3 + Math.floor(Math.random() * (list.length - 3))];
     if (recent.includes(p) || live.some((n) => n.entry === p)) continue;
@@ -219,23 +255,38 @@ function updateNotes(dt, time) {
   const pinned = []; // podium boxes this frame, placed in rank order
   const keep = castleRect(); // the castle stays in view: podium notes go above it, others fade
   // podium first, so floating notes know where it sits
+  let dim = 0;
   for (const n of [...live].sort((a, b) => (a.podium || 9) - (b.podium || 9))) {
-    n.age += dt;
+    n.zk = clamp((n.zk || 0) + (zoomed === n ? dt : -dt) * 5, 0, 1);
+    if (!n.zk) n.age += dt; // a zoomed note holds still (and keeps its place) until it is let go
+    const g = n.podium ? toScreen(n.ground) : null;
+    const pop = n.age < 0.4 ? easeOutBack(n.age / 0.4) : 1;
+    n.focus = Math.max(0, (n.focus || 0) - dt * 0.3);
+    let s, fade = 1, scale;
     if (n.podium) {
       n.anchor.y = n.base + Math.sin(time * 1.3 + n.podium) * 0.12;
+      s = toScreen(n.anchor);
+      const depth = clamp(camDist / n.anchor.distanceTo(camera.position), 0.8, 1.25);
+      n.podiumScale = depth * (isPhone() ? 0.78 : 1); // smaller on phones, leaving room for the rising notes
+      scale = pop * n.podiumScale * (1 + n.focus * 0.15);
     } else {
-      // pop out of the ground, then drift up slowly
-      n.anchor.y = n.ground.y + 0.2 + 1.1 * (1 - Math.exp(-n.age * 2.2)) + n.age * 0.04;
+      // pop in just above the buttons, then rise past the island and up through the sky
+      s = { x: n.startX + Math.sin(time * 0.8 + n.rot) * 5, y: n.startY - n.age * RISE(), behind: false };
+      scale = pop * (1 + n.focus * 0.15);
+      // a note that was looked up waits at the top for a while; others fade out over the last 50px
+      const room = s.y - n.h * scale - ceiling();
+      if (room <= 0) {
+        s.y = ceiling() + n.h * scale;
+        n.hold = Math.max(0, (n.hold || 0) - dt);
+        if (!n.hold) n.out ??= 0.5;
+      }
+      fade = n.hold > 0 ? 1 : clamp(room / 50, 0, 1);
+      if (n.out !== undefined) {
+        n.out -= dt;
+        fade *= clamp(n.out / 0.5, 0, 1);
+        if (n.out <= 0) n.done = true;
+      }
     }
-    const s = toScreen(n.anchor);
-    const g = toScreen(n.ground);
-    // keep the whole note on screen, and nudge pinned notes off the title and buttons
-    const t = n.age / n.life;
-    const pop = n.age < 0.4 ? easeOutBack(n.age / 0.4) : 1;
-    let fade = t > 0.88 ? (1 - t) / 0.12 : 1;
-    const depth = clamp(camDist / n.anchor.distanceTo(camera.position), 0.8, 1.25);
-    n.focus = Math.max(0, (n.focus || 0) - dt * 0.3);
-    const scale = pop * depth * (1 + (n.focus || 0) * 0.15);
     const w = n.w * scale, h = n.h * scale;
     // keep the whole note (and its score tag) on screen
     s.x = clamp(s.x, w / 2 + 22, innerWidth - w / 2 - 22);
@@ -245,21 +296,60 @@ function updateNotes(dt, time) {
       // lower ranks step down below anything already placed
       for (const b of [...ui, ...pinned]) if (overlaps(boxAt(s.x, s.y, w, h), b, 6)) s.y = b.bottom + h + 12;
       pinned.push(boxAt(s.x, s.y, w, h));
-    } else if (!n.focus && [...pinned, keep].some((b) => b && overlaps(boxAt(s.x, s.y, w, h), b, 0))) {
-      fade *= 0.3; // drifted in front of the castle or a podium note as the camera turned: step back
+    } else if (!n.focus) {
+      // rising past a podium note or the castle: step back so they stay readable
+      if (pinned.some((b) => overlaps(boxAt(s.x, s.y, w, h), b, 0))) fade *= 0.3;
+      else if (keep && overlaps(boxAt(s.x, s.y, w, h), keep, 0)) fade *= 0.6;
     }
-    n.sx = s.x;
-    n.sy = s.y;
-    n.el.style.transform = `translate(${s.x.toFixed(1)}px, ${s.y.toFixed(1)}px) translate(-50%, -100%) rotate(${n.rot}deg) scale(${scale.toFixed(3)})`;
-    n.el.style.opacity = s.behind ? 0 : Math.max(0, fade).toFixed(3);
-    n.el.style.zIndex = n.podium ? 5 : n.focus > 0 ? 6 : 1;
-    if (n.puff?.isConnected) n.puff.style.transform = `translate(${g.x}px, ${g.y}px)`;
-    // a dotted string from the ground up to the note, like it grew out of the island
-    const bend = Math.sin(time * 1.5 + n.rot) * 14;
-    n.line.setAttribute('d', `M${g.x.toFixed(1)} ${g.y.toFixed(1)} Q${((g.x + s.x) / 2 + bend).toFixed(1)} ${((g.y + s.y) / 2).toFixed(1)} ${s.x.toFixed(1)} ${s.y.toFixed(1)}`);
-    n.line.style.opacity = s.behind || g.behind ? 0 : (Math.max(0, fade) * 0.9).toFixed(3);
-    if (!n.podium && n.age >= n.life) retire(n);
+    // glide toward where the rules above put the note, never jump: a podium note that steps
+    // around the castle or another note slides there, and fading in or out is gradual too
+    const glide = 1 - Math.exp(-dt * 3);
+    if (n.px === undefined) [n.px, n.py, n.alpha] = [s.x, s.y, 0];
+    if (n.podium) {
+      // eased, and never faster than 160px a second
+      const dx = (s.x - n.px) * glide, dy = (s.y - n.py) * glide;
+      const cap = Math.min(1, (160 * dt) / (Math.hypot(dx, dy) || 1));
+      n.px += dx * cap;
+      n.py += dy * cap;
+    } else [n.px, n.py] = [s.x, s.y]; // floating notes already move smoothly on their own
+    n.alpha += ((s.behind ? 0 : Math.max(0, fade)) - n.alpha) * (1 - Math.exp(-dt * 8));
+    n.sx = n.px;
+    n.sy = n.py;
+    let x = n.px, y = n.py, rot = n.rot, alpha = n.alpha;
+    if (n.zk) {
+      // blend toward the middle of the screen, big and straight
+      const k = smooth(n.zk);
+      const big = Math.min((innerWidth * 0.84) / n.w, (innerHeight * 0.42) / n.h, 3.2);
+      x += (innerWidth / 2 - x) * k;
+      y += (innerHeight / 2 + (n.h * big) / 2 - y) * k;
+      scale += (big - scale) * k;
+      rot *= 1 - k;
+      alpha += (1 - alpha) * k;
+      if (zoomed === n) n.out = undefined;
+      dim = Math.max(dim, k);
+    }
+    // a zoomed note grows through its font size, not a scale transform: a transform only stretches the
+    // already-drawn note like a picture (blurry), while a bigger font is drawn again, sharp
+    if (n.zk) {
+      n.el.style.fontSize = `${(n.el.dataset.size * scale).toFixed(2)}px`;
+      scale = 1;
+    } else if (n.el.style.fontSize) n.el.style.fontSize = '';
+    n.el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, -100%) rotate(${rot.toFixed(2)}deg) scale(${scale.toFixed(3)})`;
+    n.el.style.opacity = alpha.toFixed(3);
+    n.el.style.zIndex = n.zk ? 30 : n.podium ? 5 : n.focus > 0 ? 6 : 1;
+    if (n.line) {
+      // podium notes hang from a dotted string over their landmark
+      const bend = Math.sin(time * 1.5 + n.rot) * 14;
+      n.line.setAttribute('d', `M${g.x.toFixed(1)} ${g.y.toFixed(1)} Q${((g.x + s.x) / 2 + bend).toFixed(1)} ${((g.y + s.y) / 2).toFixed(1)} ${s.x.toFixed(1)} ${s.y.toFixed(1)}`);
+      n.line.style.opacity = s.behind || g.behind ? 0 : (Math.max(0, fade) * 0.9 * (1 - (n.zk || 0))).toFixed(3);
+    }
+    if (n.done) retire(n);
   }
+  if (zoomed && !live.includes(zoomed)) zoomed = null;
+  // while a note is zoomed the notes layer sits above the title and buttons, with a dim behind it
+  scrim.style.opacity = (dim * 0.55).toFixed(3);
+  scrim.style.pointerEvents = zoomed ? 'auto' : 'none';
+  notesEl.style.zIndex = dim > 0 ? 10 : '';
 }
 
 // ---------- ranking notebook ----------
@@ -278,7 +368,7 @@ function renderList() {
     $('page').parentElement.hidden = true;
     return;
   }
-  const pages = Math.ceil(all.length / PER_PAGE);
+  const pages = Math.max(1, Math.ceil(all.length / PER_PAGE));
   page = clamp(page, 0, pages - 1);
   $('list').innerHTML = all.slice(page * PER_PAGE, (page + 1) * PER_PAGE).map(row).join('');
   $('page').textContent = `${page + 1} / ${pages}`;
@@ -307,7 +397,7 @@ $('list').addEventListener('click', (e) => {
   if (!li) return;
   $('drawer').hidden = true;
   const p = crowd.ranked[li.dataset.rank - 1];
-  crowd.rankOf(p) <= 3 ? focusNote(p) : spawn(p, { hold: 6, force: true });
+  focusNote(p); // pops it up on the island and zooms it in
 });
 
 // ---------- loop ----------
@@ -318,7 +408,13 @@ function resize() {
 }
 addEventListener('resize', resize);
 resize();
-$('count').textContent = fmt(crowd.size);
+function renderCount() {
+  $('count').textContent = fmt(crowd.size);
+  $('countLine').hidden = !crowd.size;
+  $('empty').hidden = !!crowd.size;
+}
+renderCount();
+$('sim').hidden = !crowd.simulated;
 document.fonts?.load('58px Huninn', SPOTS.map((s) => s.name).join('')).then(() => map.refreshLabels(), () => {});
 
 renderPodium();
@@ -326,7 +422,8 @@ const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let spawnIn = 0.4;
 let arriveIn = 4;
 let sinceMine = 0;
-if (crowd.me && location.hash === '#me') setTimeout(() => spawn(crowd.me, { hold: 8, force: true }), 600);
+const waiting = []; // new arrivals waiting for a clear spot
+if (crowd.me && location.hash === '#me') setTimeout(() => focusNote(crowd.me), 2200); // after the castle has started rising
 
 const clock = new THREE.Clock();
 renderer.setAnimationLoop(() => {
@@ -341,22 +438,26 @@ renderer.setAnimationLoop(() => {
     spawnIn = rnd(0.7, 1.4) * (reduced ? 2.5 : 1);
     // your own wish comes back around every so often
     let placed;
-    if (crowd.me && ++sinceMine > 24) {
+    if (waiting.length) {
+      // new arrivals first, as soon as there is room for them
+      placed = spawn(waiting[0], { fresh: true });
+      if (placed) waiting.shift();
+    } else if (crowd.me && ++sinceMine > 24) {
       placed = spawn(crowd.me);
       if (placed) sinceMine = 0;
     } else placed = spawn(nextEntry());
     if (!placed) spawnIn = 0.3;
   }
   arriveIn -= dt;
-  if (arriveIn <= 0) {
+  if (crowd.simulated && arriveIn <= 0) {
     arriveIn = rnd(3, 7);
     const p = crowd.arrive();
-    $('count').textContent = fmt(crowd.size);
+    renderCount();
     if (crowd.rankOf(p) <= 3) {
       renderPodium();
       celebrate();
     }
-    else spawn(p, { fresh: true, force: true });
+    else waiting.push(p);
   }
   fireIn -= dt;
   if (fireIn <= 0) {
