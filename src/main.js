@@ -96,6 +96,7 @@ function syncInsets() {
 function showSheet(spot) {
   current = spot;
   $('hint').hidden = !!spot;
+  if (spot) $('soundTip').hidden = true; // the sound reminder is only for the first look at the map
   sheet.root.hidden = !spot;
   requestAnimationFrame(syncInsets);
   if (!spot) return;

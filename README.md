@@ -56,5 +56,5 @@ python3 tools/serve.py 8000
 
 - 網址：https://richman-yi.github.io/shuhua-birthday/
 - 推送到 `main` 就會由 [.github/workflows/pages.yml](.github/workflows/pages.yml) 自動部署到 GitHub Pages。
-- 網站只放遊戲會載入的檔案：`index.html`、`wall.html`、`src/`（不含 `src/viewer.js`）。規格文件、工具和模型檢視頁只在倉庫裡。
+- 網站只放遊戲會載入的檔案：`index.html`、`wall.html`、`frame.html`（電腦版的手機比例外框）、`src/`（不含 `src/viewer.js`）。規格文件、工具和模型檢視頁只在倉庫裡。
 - `ref/` 的參考圖不進倉庫（見 `.gitignore`），只留在本機。

@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>觀光大使的生日小旅行</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<script>
+  // a wide desktop window (mouse, not touch) plays inside a phone-shaped frame, so everyone gets the same view;
+  // add ?full to the address to skip it
+  if (window.top === window.self && !/[?&]full\b/.test(location.search) && matchMedia('(hover: hover) and (pointer: fine)').matches && innerWidth > innerHeight * 0.8) {
+    location.replace('frame.html' + location.hash);
+  }
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
@@ -128,6 +135,9 @@
     max-width: 100%;
     box-sizing: border-box;
   }
+
+  .hint:has(.sound-tip:not([hidden])) { display: grid; gap: 2px; border-radius: 16px; }
+  .sound-tip { font-weight: 500; color: var(--peach-deep); }
 
   /* landmark sheet */
   .sheet {
@@ -472,7 +482,7 @@
   </header>
 
   <p id="skyNote" class="sky-note" hidden aria-live="polite"></p>
-  <p id="hint" class="hint">點景點出發・拖曳轉動・雙指縮放</p>
+  <p id="hint" class="hint"><b id="soundTip" class="sound-tip">🔊 請打開聲音・iPhone 記得關掉靜音模式</b><span>點景點出發・拖曳轉動・雙指縮放</span></p>
 
   <div id="summary" class="overlay" hidden>
     <div class="card dialog">

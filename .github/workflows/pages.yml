@@ -27,7 +27,7 @@ jobs:
       - name: Collect site files
         run: |
           mkdir _site
-          cp index.html wall.html _site/
+          cp index.html wall.html frame.html _site/
           cp -r src _site/
           rm -f _site/src/viewer.js
           touch _site/.nojekyll

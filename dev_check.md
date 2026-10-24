@@ -30,6 +30,12 @@ python3 tools/serve.py 8000
 - **電腦**：用下面的 `localhost` 網址。
 - **手機**（要和 Mac 連同一個網路）：把 `localhost` 換成 Mac 的 IP。目前是 `172.20.10.4`，換網路後會變，可以用 `ipconfig getifaddr en0` 查。
 
+## 電腦上用手機比例測試
+
+電腦打開遊戲會自動用手機比例的直式框顯示（見 [level-framework.md](docs/specs/level-framework.md)），所以在 Mac 上用 `localhost` 就能先看到手機版的畫面，不用每次推上 GitHub。
+
+- 想用整個視窗看：網址加 `?full`，例如 http://localhost:8000/?full#dev
+
 ## 測試時先開開發者模式
 
 | 動作 | 電腦 | 手機 |

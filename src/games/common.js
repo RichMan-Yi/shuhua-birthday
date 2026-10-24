@@ -4,10 +4,13 @@ export const clamp = THREE.MathUtils.clamp;
 
 // Horizontal steering shared by the catch and boat games: finger or mouse x maps to
 // [-1, 1]; arrow keys / A D nudge it. read() returns the current target.
+// The middle 2/3 of the screen covers the whole range, so the edges are reachable without
+// pushing a thumb against the bezel.
+const REACH = 1.5;
 export function steering(isActive) {
   let target = 0;
   const keys = { left: false, right: false };
-  const fromScreen = (x) => (target = clamp(((x / innerWidth) * 2 - 1) * 1.1, -1, 1));
+  const fromScreen = (x) => (target = clamp(((x / innerWidth) * 2 - 1) * REACH, -1, 1));
   addEventListener('pointerdown', (e) => isActive() && e.target.tagName === 'CANVAS' && fromScreen(e.clientX));
   addEventListener('pointermove', (e) => isActive() && (e.pointerType === 'mouse' || e.buttons) && fromScreen(e.clientX));
   addEventListener('keydown', (e) => {

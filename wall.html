@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>舒華生日祝福牆</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<script>
+  // a wide desktop window (mouse, not touch) plays inside a phone-shaped frame, so everyone gets the same view;
+  // add ?full to the address to skip it
+  if (window.top === window.self && !/[?&]full\b/.test(location.search) && matchMedia('(hover: hover) and (pointer: fine)').matches && innerWidth > innerHeight * 0.8) {
+    location.replace('frame.html?p=wall' + location.hash);
+  }
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">

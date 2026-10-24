@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>觀光大使的生日小旅行</title>
+<style>
+  /* Desktop wrapper: the game runs in a phone-shaped frame so desktop and phone players see the same view. */
+  html, body { height: 100%; margin: 0; }
+  body {
+    display: grid;
+    place-items: center;
+    background: radial-gradient(circle at 50% 35%, #DDEFF3, #9CCAD6);
+    overflow: hidden;
+  }
+  iframe {
+    display: block;
+    border: 0;
+    border-radius: 28px;
+    background: #CFE8EE;
+    box-shadow: 0 0 0 8px #FFFBF3, 0 18px 50px rgba(34, 52, 58, 0.28);
+  }
+</style>
+</head>
+<body>
+<iframe id="game" title="觀光大使的生日小旅行" allow="autoplay; fullscreen"></iframe>
+<script>
+  const PHONE = 390 / 844; // width / height of a typical phone held upright
+  const frame = document.getElementById('game');
+  const page = new URLSearchParams(location.search).get('p') === 'wall' ? 'wall.html' : 'index.html';
+  frame.src = page + location.hash;
+  function fit() {
+    const h = Math.min(innerHeight - 48, 900);
+    const w = Math.min(Math.round(h * PHONE), innerWidth - 48);
+    frame.style.width = w + 'px';
+    frame.style.height = Math.round(w / PHONE) + 'px';
+  }
+  addEventListener('resize', fit);
+  fit();
+  frame.addEventListener('load', () => frame.contentWindow.focus()); // arrow keys reach the game without a click
+</script>
+</body>
+</html>
