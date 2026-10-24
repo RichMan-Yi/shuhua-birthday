@@ -78,18 +78,21 @@ export function createActivities({ wolf, spots, groups }) {
       const baseY = penguin.position.y;
       let pal = null;
       return {
-        at: world('xpark', 1.35, 0, 0.95).setY(0), // just east of the penguin: the two face each other across the view
+        // west of the penguin, on the far side from the usual (south-east) view, so the wolf faces the player
+        at: world('xpark', -0.25, 0, 0.95).setY(0),
         enter() {
           g.userData.playing = true;
           pal = penguin.getWorldPosition(new THREE.Vector3());
         },
-        update(dt, t) {
-          // they take turns jumping, and both turn to face each other
+        update(dt, t, camera) {
+          // they take turns jumping; the penguin faces the wolf, the wolf turns halfway between its pal and the player
           wolf.position.y = Math.max(0, Math.sin(t * 6)) * 0.28;
           penguin.position.y = baseY + Math.max(0, Math.sin(t * 6 + Math.PI)) * 0.22;
           penguin.rotation.z = 0;
           penguin.rotation.y = Math.atan2(wolf.position.x - pal.x, wolf.position.z - pal.z) - g.rotation.y;
-          faceTo(pal, 0.2);
+          const toPal = pal.clone().sub(wolf.position).setY(0).normalize();
+          const toCam = camera.position.clone().sub(wolf.position).setY(0).normalize();
+          faceTo(wolf.position.clone().add(toPal.add(toCam.multiplyScalar(1.3))), Math.min(1, dt * 5));
           parts.arms[0].rotation.set(0, 0, -parts.rest.arm - 0.9 - Math.max(0, Math.sin(t * 6)) * 0.6);
           parts.arms[1].rotation.set(0, 0, parts.rest.arm + 0.9 + Math.max(0, Math.sin(t * 6)) * 0.6);
           wag(t, 12);

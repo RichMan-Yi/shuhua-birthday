@@ -7,6 +7,24 @@ import { tally } from './shell.js';
 
 const DURATION = 40;
 
+// thin fins: a forked tail fanning out behind the body (narrow where it joins), and a dorsal fin
+function fin(points, color, depth = 0.04) {
+  const shape = new THREE.Shape(points.map(([x, y]) => new THREE.Vector2(x, y)));
+  const geo = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false });
+  geo.translate(0, 0, -depth / 2);
+  return new THREE.Mesh(geo, mat(color));
+}
+const tailFin = (color, x) => {
+  const t = fin([[0.04, 0.05], [-0.26, 0.22], [-0.17, 0], [-0.26, -0.22], [0.04, -0.05]], color);
+  t.position.x = x;
+  return t;
+};
+const dorsalFin = (color, x, y) => {
+  const d = fin([[-0.16, 0], [0.12, 0], [-0.1, 0.13]], color, 0.03);
+  d.position.set(x, y - 0.03, 0);
+  return d;
+};
+
 // Each creature faces +x; the tank flips it when it turns around.
 const KINDS = {
   clown: {
@@ -24,10 +42,8 @@ const KINDS = {
         band.position.x = x;
         g.add(band);
       }
-      const tail = mesh(new THREE.ConeGeometry(0.17, 0.26, 4), mat('#F37A2A'), -0.44, 0, 0);
-      tail.rotation.z = Math.PI / 2;
-      tail.scale.z = 0.35;
-      g.add(tail);
+      g.add(tailFin('#F37A2A', -0.33));
+      g.add(dorsalFin('#F37A2A', 0.02, 0.26));
       return g;
     },
   },
@@ -44,10 +60,8 @@ const KINDS = {
       stripe.scale.set(0.9, 0.45, 0.44);
       stripe.position.set(-0.02, 0.06, 0);
       g.add(stripe);
-      const tail = mesh(new THREE.ConeGeometry(0.17, 0.26, 4), mat('#F5C629'), -0.47, 0, 0);
-      tail.rotation.z = Math.PI / 2;
-      tail.scale.z = 0.35;
-      g.add(tail);
+      g.add(tailFin('#F5C629', -0.35));
+      g.add(dorsalFin('#2F6BD8', 0.0, 0.31));
       return g;
     },
   },
